@@ -396,6 +396,15 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET" && pathname === "/health") {
+    sendJson(res, 200, {
+      ok: true,
+      service: "snatch-auction",
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
   if (req.method === "POST" && pathname === "/api/domain-fetch") {
     await handleDomainFetch(req, res, requestUrl);
     return;

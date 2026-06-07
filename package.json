@@ -1,0 +1,14 @@
+{
+  "name": "snatch-auction",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Snatch.auction domain fetch platform",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/domain-fetch-waterfall.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

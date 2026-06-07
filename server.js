@@ -389,24 +389,25 @@ function serveStatic(req, res, requestUrl) {
 const server = http.createServer(async (req, res) => {
   const host = req.headers.host || `localhost:${PORT}`;
   const requestUrl = new URL(req.url || "/", `http://${host}`);
+  const pathname = requestUrl.pathname.replace(/\/+$/, "") || "/";
 
-  if (req.method === "GET" && requestUrl.pathname === "/api/namesilo-auctions") {
+  if (req.method === "GET" && pathname === "/api/namesilo-auctions") {
     await handleNameSiloAuctions(req, res, requestUrl);
     return;
   }
 
-  if (req.method === "POST" && requestUrl.pathname === "/api/domain-fetch") {
+  if (req.method === "POST" && pathname === "/api/domain-fetch") {
     await handleDomainFetch(req, res, requestUrl);
     return;
   }
 
-  if (req.method === "GET" && requestUrl.pathname === "/api/candidates") {
+  if (req.method === "GET" && pathname === "/api/candidates") {
     handleCandidates(req, res);
     return;
   }
 
-  if (req.method === "GET" && requestUrl.pathname.startsWith("/api/candidates/")) {
-    const candidateId = requestUrl.pathname.replace("/api/candidates/", "");
+  if (req.method === "GET" && pathname.startsWith("/api/candidates/")) {
+    const candidateId = pathname.replace("/api/candidates/", "");
     if (candidateId.endsWith("/status")) {
       const cleanId = candidateId.replace(/\/status$/, "");
       await handleCandidateStatus(req, res, cleanId, { apiKey: process.env.NAMESILO_API_KEY });
@@ -416,38 +417,38 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "POST" && requestUrl.pathname.startsWith("/api/candidates/") && requestUrl.pathname.endsWith("/status")) {
-    const candidateId = requestUrl.pathname.replace("/api/candidates/", "").replace(/\/status$/, "");
+  if (req.method === "POST" && pathname.startsWith("/api/candidates/") && pathname.endsWith("/status")) {
+    const candidateId = pathname.replace("/api/candidates/", "").replace(/\/status$/, "");
     await handleCandidateStatus(req, res, candidateId, { apiKey: process.env.NAMESILO_API_KEY });
     return;
   }
 
-  if (req.method === "POST" && requestUrl.pathname === "/api/compare-candidates") {
+  if (req.method === "POST" && pathname === "/api/compare-candidates") {
     await handleCompareCandidates(req, res);
     return;
   }
 
-  if (req.method === "POST" && requestUrl.pathname === "/api/refine-candidates") {
+  if (req.method === "POST" && pathname === "/api/refine-candidates") {
     await handleRefineCandidates(req, res, { apiKey: process.env.NAMESILO_API_KEY });
     return;
   }
 
-  if (req.method === "POST" && requestUrl.pathname === "/api/shortlist-candidate") {
+  if (req.method === "POST" && pathname === "/api/shortlist-candidate") {
     await handleShortlistCandidate(req, res);
     return;
   }
 
-  if (req.method === "POST" && requestUrl.pathname === "/api/watch-auction") {
+  if (req.method === "POST" && pathname === "/api/watch-auction") {
     await handleWatchAuction(req, res);
     return;
   }
 
-  if (req.method === "POST" && requestUrl.pathname === "/api/acquisition-path") {
+  if (req.method === "POST" && pathname === "/api/acquisition-path") {
     await handleAcquisitionPath(req, res, { apiKey: process.env.NAMESILO_API_KEY });
     return;
   }
 
-  if (req.method === "GET" && requestUrl.pathname === "/domains") {
+  if (req.method === "GET" && pathname === "/domains") {
     const items = listPublicCandidates()
       .slice(0, 120)
       .map((candidate) => `<li><a href="/domains/${candidate.domain.replace(/\./g, "-")}">${escapeHtml(candidate.domain)}</a></li>`)
@@ -457,7 +458,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && requestUrl.pathname === "/api/domain-feed.json") {
+  if (req.method === "GET" && pathname === "/api/domain-feed.json") {
     const feed = listPublicCandidates().map((candidate) => ({
       candidateId: candidate.candidateId,
       domain: candidate.domain,
@@ -479,7 +480,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && requestUrl.pathname === "/api/domain-feed.ndjson") {
+  if (req.method === "GET" && pathname === "/api/domain-feed.ndjson") {
     const feed = listPublicCandidates();
     res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8" });
     for (const candidate of feed) {
@@ -505,7 +506,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && requestUrl.pathname === "/sitemap.xml") {
+  if (req.method === "GET" && pathname === "/sitemap.xml") {
     const domains = listPublicCandidates().map((candidate) => `/domains/${candidate.domain.replace(/\./g, "-")}`);
     const urls = ["/", "/experiments/intent-fetch/", "/experiments/auction-radar/", "/experiments/explain-domain/", "/methodology/", ...domains];
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -521,14 +522,14 @@ ${urls
     return;
   }
 
-  if (req.method === "GET" && requestUrl.pathname === "/robots.txt") {
+  if (req.method === "GET" && pathname === "/robots.txt") {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     res.end(`User-agent: *\nAllow: /\nSitemap: http://localhost:${PORT}/sitemap.xml\n`);
     return;
   }
 
-  if (req.method === "GET" && requestUrl.pathname.startsWith("/domains/")) {
-    const slug = requestUrl.pathname.replace("/domains/", "");
+  if (req.method === "GET" && pathname.startsWith("/domains/")) {
+    const slug = pathname.replace("/domains/", "");
     const candidate = findCandidateBySlug(slug);
     if (!candidate) {
       res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });

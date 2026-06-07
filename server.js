@@ -15,6 +15,10 @@ const { listPublicCandidates, findCandidateBySlug, isStatusStale } = require("./
 
 const ROOT = path.resolve(__dirname);
 const ENV_FILES = [".env.local", ".env"];
+const IS_PRODUCTION =
+  process.env.NODE_ENV === "production" ||
+  Boolean(process.env.RAILWAY_ENVIRONMENT_NAME) ||
+  Boolean(process.env.RAILWAY_PROJECT_ID);
 
 function loadEnvFile(filename) {
   const filePath = path.join(ROOT, filename);
@@ -41,8 +45,10 @@ function loadEnvFile(filename) {
   });
 }
 
-ENV_FILES.forEach(loadEnvFile);
-const PORT = Number(process.env.PORT || 4173);
+if (!IS_PRODUCTION) {
+  ENV_FILES.forEach(loadEnvFile);
+}
+const PORT = Number(process.env.PORT || (IS_PRODUCTION ? 8080 : 4173));
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -558,6 +564,6 @@ ${urls
   sendJson(res, 405, { error: "Method not allowed." });
 });
 
-server.listen(PORT, () => {
-  process.stdout.write(`Domain Fetch Lab server running on http://localhost:${PORT}\n`);
+server.listen(PORT, "0.0.0.0", () => {
+  process.stdout.write(`Domain Fetch Lab server running on http://0.0.0.0:${PORT}\n`);
 });

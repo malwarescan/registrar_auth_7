@@ -1682,12 +1682,24 @@ async function fetchDomainFetch(brief) {
       constraints: buildConstraintPayload(),
     }),
   });
-  const payload = await response.json();
+  const raw = await response.text();
+  let payload = {};
+  if (raw && raw.trim().length > 0) {
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      throw new Error(`Domain fetch endpoint returned invalid JSON (HTTP ${response.status}).`);
+    }
+  }
   if (!response.ok) {
-    throw new Error(payload?.message || payload?.error || "Domain fetch failed.");
+    throw new Error(payload?.message || payload?.error || `Domain fetch failed (HTTP ${response.status}).`);
   }
   if (!Array.isArray(payload?.decisionCandidates)) {
-    throw new Error("Domain fetch response is missing decisionCandidates.");
+    throw new Error(
+      raw && raw.trim().length === 0
+        ? "Domain fetch endpoint returned an empty response body."
+        : "Domain fetch response is missing decisionCandidates."
+    );
   }
   return payload;
 }

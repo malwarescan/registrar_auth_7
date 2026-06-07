@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Extension Hierarchy | Snatch.auction</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+        vertical-align: middle;
+      }
+      body {
+        background-color: #f9f8f6;
+        font-family: "Inter", sans-serif;
+      }
+      .card-shadow {
+        box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.04);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-[#F9F8F6] pb-36 text-[#1A1C1B]">
+    <header class="sticky top-0 z-50 flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
+      <div class="flex items-center gap-4">
+        <a
+          href="./naming-constraints.html"
+          class="flex h-10 w-10 items-center justify-center rounded-full text-[#5F5E5E] transition-colors hover:bg-[#F4F3F1] active:scale-95"
+        >
+          <span class="material-symbols-outlined">arrow_back</span>
+        </a>
+        <div class="flex flex-col">
+          <span class="font-mono text-xs uppercase tracking-wide text-[#737373]">Analysis › Core Strategy</span>
+          <span class="text-xl font-bold">Extension Hierarchy</span>
+        </div>
+      </div>
+      <span class="text-sm font-semibold text-[#0032c4]">Snatch.auction</span>
+    </header>
+
+    <main class="mx-auto mt-8 max-w-[1200px] space-y-8 px-4">
+      <section>
+        <h1 class="mb-2 text-3xl font-semibold leading-tight">Defining Extension Strategy</h1>
+        <p class="max-w-2xl text-[17px] text-[#737373]">
+          Set the priority for top-level domains based on your brand signal and budget. The hierarchy determines
+          which assets are pursued first in competitive auctions.
+        </p>
+      </section>
+
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <article class="group flex flex-col overflow-hidden rounded-xl border border-[#EEEEEE] bg-white card-shadow transition hover:border-[#0044ff]">
+          <div class="flex items-start justify-between border-b border-[#F0F0F0] p-6">
+            <div>
+              <span class="inline-flex rounded-sm bg-[#DEE1FF] px-2 py-0.5 font-mono text-xs uppercase text-[#0032c4]">.COM</span>
+              <h3 class="mt-1 text-2xl font-semibold">The Gold Standard</h3>
+            </div>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#00C48C]/10 px-3 py-1 font-mono text-xs font-bold text-[#00C48C]">
+              <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">verified</span>
+              Primary
+            </span>
+          </div>
+          <div class="flex-grow p-6">
+            <p class="mb-4 text-[#5F5E5E]">
+              Highest trust, corporate signaling, and universal recall. Essential for mass-market visibility.
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span class="rounded bg-[#F4F3F1] px-2 py-1 font-mono text-xs text-[#434657]">Trust: 10/10</span>
+              <span class="rounded bg-[#F4F3F1] px-2 py-1 font-mono text-xs text-[#434657]">Resale: Premium</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between bg-[#FFFFFF] px-6 py-4">
+            <span class="font-mono text-xs italic text-[#737373]">Tier 1 Priority</span>
+            <input type="checkbox" checked class="h-5 w-5 accent-[#0032c4]" />
+          </div>
+        </article>
+
+        <article class="group flex flex-col overflow-hidden rounded-xl border border-[#EEEEEE] bg-white card-shadow transition hover:border-[#0044ff]">
+          <div class="flex items-start justify-between border-b border-[#F0F0F0] p-6">
+            <div>
+              <span class="inline-flex rounded-sm bg-[#DEE1FF] px-2 py-0.5 font-mono text-xs uppercase text-[#0032c4]">.AI</span>
+              <h3 class="mt-1 text-2xl font-semibold">The Tech Signal</h3>
+            </div>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#0032c4]/10 px-3 py-1 font-mono text-xs font-bold text-[#0032c4]">
+              <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">auto_awesome</span>
+              Strategic Alternative
+            </span>
+          </div>
+          <div class="flex-grow p-6">
+            <p class="mb-4 text-[#5F5E5E]">
+              Signals advanced technology and automation. Ideal for AI-native platforms and startup positioning.
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span class="rounded bg-[#F4F3F1] px-2 py-1 font-mono text-xs text-[#434657]">Momentum: High</span>
+              <span class="rounded bg-[#F4F3F1] px-2 py-1 font-mono text-xs text-[#434657]">TLD Cost: High</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between bg-[#FFFFFF] px-6 py-4">
+            <span class="font-mono text-xs italic text-[#737373]">Tier 1 Priority</span>
+            <input type="checkbox" checked class="h-5 w-5 accent-[#0032c4]" />
+          </div>
+        </article>
+
+        <article class="group flex flex-col overflow-hidden rounded-xl border border-[#EEEEEE] bg-white card-shadow transition hover:border-[#0044ff]">
+          <div class="border-b border-[#F0F0F0] p-6">
+            <span class="inline-flex rounded-sm bg-[#E5E2E1] px-2 py-0.5 font-mono text-xs uppercase text-[#5F5E5E]">.IO</span>
+            <h3 class="mt-1 text-2xl font-semibold">The Modern Alternative</h3>
+          </div>
+          <div class="flex-grow p-6">
+            <p class="mb-4 text-[#5F5E5E]">Popular in startup ecosystems with strong tech-forward signaling.</p>
+            <div class="flex flex-wrap gap-2">
+              <span class="rounded bg-[#F4F3F1] px-2 py-1 font-mono text-xs text-[#434657]">Dev-Friendly</span>
+              <span class="rounded bg-[#F4F3F1] px-2 py-1 font-mono text-xs text-[#434657]">Niche Specific</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between bg-[#FFFFFF] px-6 py-4">
+            <span class="font-mono text-xs italic text-[#737373]">Tier 2 Priority</span>
+            <input type="checkbox" class="h-5 w-5 accent-[#0032c4]" />
+          </div>
+        </article>
+
+        <article class="group flex flex-col overflow-hidden rounded-xl border border-[#EEEEEE] bg-white card-shadow transition hover:border-[#0044ff]">
+          <div class="border-b border-[#F0F0F0] p-6">
+            <span class="inline-flex rounded-sm bg-[#E5E2E1] px-2 py-0.5 font-mono text-xs uppercase text-[#5F5E5E]">.TECH / .APP</span>
+            <h3 class="mt-1 text-2xl font-semibold">The Niche Category</h3>
+          </div>
+          <div class="flex-grow p-6">
+            <p class="mb-4 text-[#5F5E5E]">
+              Useful when short premium options are unavailable. Best for targeted product utilities.
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span class="rounded bg-[#F4F3F1] px-2 py-1 font-mono text-xs text-[#434657]">Budget Efficient</span>
+              <span class="rounded bg-[#F4F3F1] px-2 py-1 font-mono text-xs text-[#434657]">Categorical</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between bg-[#FFFFFF] px-6 py-4">
+            <span class="font-mono text-xs italic text-[#737373]">Tier 3 Priority</span>
+            <input type="checkbox" class="h-5 w-5 accent-[#0032c4]" />
+          </div>
+        </article>
+      </div>
+
+      <section class="rounded-xl border border-[#EEEEEE] bg-white p-8 card-shadow">
+        <h3 class="mb-4 text-2xl font-semibold">Allocation Visualization</h3>
+        <p class="mb-6 text-sm text-[#737373]">
+          Your hierarchy prioritizes high-equity assets with the largest budget share to .com and .ai.
+        </p>
+        <div class="mb-3 flex h-4 w-full overflow-hidden rounded-full bg-[#F4F3F1]">
+          <div class="h-full w-[60%] bg-[#0032c4]"></div>
+          <div class="h-full w-[25%] bg-[#D9A05B]"></div>
+          <div class="h-full w-[15%] bg-[#C4C5DA]"></div>
+        </div>
+        <div class="flex justify-between font-mono text-xs text-[#737373]">
+          <span>High-Tier Asset</span>
+          <span>Mid-Tier</span>
+          <span>Utility</span>
+        </div>
+      </section>
+    </main>
+
+    <div class="fixed bottom-0 left-0 w-full border-t border-[#EEEEEE] bg-white/90 p-4 backdrop-blur-md md:p-6">
+      <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-4">
+        <p class="hidden text-sm text-[#737373] md:block">Changes update auction bidding logic immediately.</p>
+        <div class="flex w-full gap-4 md:w-auto">
+          <a
+            href="./naming-constraints.html"
+            class="flex-1 rounded-xl border border-[#1A1A1A] px-6 py-3 text-center font-semibold transition hover:bg-[#F4F3F1] md:flex-none"
+          >
+            Discard Changes
+          </a>
+          <a
+            href="./naming-strategy.html"
+            class="flex-1 rounded-xl bg-[#0032c4] px-8 py-3 text-center font-semibold text-white shadow-md transition hover:bg-[#0044ff] md:flex-none"
+          >
+            Save Extension Priorities
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Intent Fetch | Domain Fetch Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../assets/app.css" />
+  </head>
+  <body class="app-shell intent-fetch-page">
+    <header class="top-nav">
+      <div class="top-nav-inner">
+        <div class="ui-nav-left">
+          <h2 class="ui-page-title">Intent Fetch</h2>
+        </div>
+        <div class="ui-nav-right">
+          <select
+            class="ui-page-switcher"
+            aria-label="Switch UI page"
+            onchange="if (this.value) window.location.href = this.value;"
+          >
+            <option value="/experiments/intent-fetch/" selected>Intent Fetch</option>
+            <option value="/experiments/auction-radar/">Auction Radar</option>
+            <option value="/experiments/explain-domain/">Explain Domain</option>
+            <option value="/methodology/">Methodology</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <main class="arcade-workbench">
+      <aside class="left-rail card">
+        <div class="left-step active" id="step-brief">
+          <span class="left-step-index">1</span>
+          <div>
+            <p class="left-step-name">Brief</p>
+            <p class="left-step-meta">Intent</p>
+          </div>
+        </div>
+        <div class="left-step" id="step-surface">
+          <span class="left-step-index">2</span>
+          <div>
+            <p class="left-step-name">Surface</p>
+            <p class="left-step-meta">Live auction candidates</p>
+          </div>
+        </div>
+        <div class="left-step" id="step-rank">
+          <span class="left-step-index">3</span>
+          <div>
+            <p class="left-step-name">Explain</p>
+            <p class="left-step-meta">Reasoning</p>
+          </div>
+        </div>
+        <div class="left-step" id="step-action">
+          <span class="left-step-index">4</span>
+          <div>
+            <p class="left-step-name">Act</p>
+            <p class="left-step-meta">Watch / Compare</p>
+          </div>
+        </div>
+        <a class="left-rail-link" href="/methodology/">Methodology</a>
+      </aside>
+
+      <section class="workspace-main card">
+        <section class="arcade-hero">
+          <div class="hero-intro">
+            <h1 class="headline">Describe what you're building.</h1>
+            <p class="supporting">Fetch domains.</p>
+          </div>
+
+          <form
+            id="intent-form"
+            class="card command-wrap command-card"
+            toolname="fetch_domain_candidates"
+            tooldescription="Fetch ranked domain acquisition candidates from a business brief using NameSilo auctions and registration availability."
+          >
+            <label for="intent-input" class="sr-only">Business and domain brief</label>
+            <textarea
+              id="intent-input"
+              class="intent-input"
+              name="brief"
+              required
+              maxlength="2000"
+              toolparamdescription="Describe business, buyers, tone, location, budget, preferred extensions, and naming constraints."
+              placeholder="AI receptionist for local service businesses, trustworthy .com or .ai, under $500"
+              spellcheck="false"
+            ></textarea>
+            <input type="number" name="maxBudget" min="0" hidden toolparamdescription="Maximum budget in USD." />
+            <select name="includeAuctions" hidden toolparamdescription="Whether live auctions should be included.">
+              <option value="true" selected>Include auctions</option>
+              <option value="false">Registration-only</option>
+            </select>
+            <div class="command-card__meta">
+              <div class="command-meta-left">
+                <span id="intent-count">0</span> chars
+                <span id="keyboard-hint" class="keyboard-hint">Enter to fetch · Shift + Enter for new line</span>
+              </div>
+              <button id="fetch-button" class="btn-primary command-fetch-btn" type="submit">Fetch</button>
+            </div>
+            <div class="quick-prompts-row">
+              <span class="quick-prompts-label">Try:</span>
+              <div id="starter-briefs" class="quick-prompts"></div>
+            </div>
+            <button type="button" id="constraints-toggle" class="constraints-toggle">Add constraints</button>
+            <div id="constraints-panel" class="constraints-panel">
+              <div id="constraint-chips" class="chip-row constraint-chips"></div>
+            </div>
+            <div id="active-constraints" class="active-constraints"></div>
+          </form>
+        </section>
+
+        <section class="intent-results-shell">
+          <section id="status-rail" class="card status-rail">
+            <ul id="status-list" class="status-list"></ul>
+          </section>
+
+          <section id="results-header" class="results-header">
+            <div class="results-top">
+              <div id="results-count" class="results-count"></div>
+              <select id="sort-mode" class="sort-select">
+                <option value="fetch-match">Best match</option>
+                <option value="snatch-signal">Best deal signal</option>
+                <option value="lowest-friction">Lowest price pressure</option>
+              </select>
+            </div>
+            <p id="data-source-banner" class="workspace-banner"></p>
+            <div id="filters" class="chip-row"></div>
+            <p id="workspace-banner" class="workspace-banner"></p>
+          </section>
+
+          <section id="skeleton-list" class="skeleton-list"></section>
+          <section id="opportunity-list" class="opportunity-list"></section>
+          <section id="empty-state" class="card empty-state"></section>
+          <section id="candidate-diagnostics" class="card" style="display: none"></section>
+          <p id="end-note" class="end-note">End of surfaced candidates.</p>
+        </section>
+      </section>
+
+    </main>
+
+    <aside id="compare-tray" class="compare-tray">
+      <div class="compare-tray-top">
+        <strong>Compare queue</strong>
+        <button id="clear-compare" class="btn-text" type="button">Clear</button>
+      </div>
+      <div id="compare-text" class="mono" style="font-size: 13px"></div>
+    </aside>
+
+    <div id="intelligence-modal" class="intelligence-modal" aria-hidden="true">
+      <div class="intelligence-modal__backdrop" data-modal-close></div>
+      <section class="intelligence-modal__panel card" role="dialog" aria-modal="true" aria-labelledby="intelligence-modal-title">
+        <div class="intelligence-modal__top">
+          <h3 id="intelligence-modal-title">Candidate Intelligence</h3>
+          <button type="button" class="btn-text" id="intelligence-modal-close">Close</button>
+        </div>
+        <div id="intelligence-modal-body" class="intelligence-modal__body"></div>
+      </section>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="../../assets/intent-fetch.js"></script>
+    <script src="../../assets/webmcp.js"></script>
+  </body>
+</html>

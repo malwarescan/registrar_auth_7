@@ -1,0 +1,60 @@
+# Snatch.auction
+
+Snatch.auction is a Domain Fetch and Domain Creation platform.
+
+## What the product does
+
+- Interprets a natural-language business brief.
+- Scans live NameSilo auction inventory.
+- Generates candidate names when auction supply is insufficient.
+- Verifies generated names through live NameSilo registration availability.
+- Returns ranked Decision Candidates with fit reasoning, risk, tradeoffs, and action paths.
+
+## Decision Candidate model
+
+A Decision Candidate is inventory enriched with:
+
+- verified live status (`statusVerifiedAt`, `statusExpiresAt`)
+- source (`namesilo-auction`, `namesilo-available`, `namesilo-premium`)
+- acquisition path (`register`, `auction`, `buy-now`, `make-offer`, `verify`)
+- score dimensions (semantic fit, buyer fit, brandability, pronounceability, category clarity, tld trust, friction, signal, risk, overall)
+- explanations (why surfaced, best-if, less-ideal-if, catch, next action)
+
+## Public discovery surfaces
+
+- Candidate pages: `/domains/:slug`
+- JSON feed: `/api/domain-feed.json`
+- NDJSON feed: `/api/domain-feed.ndjson`
+- Sitemap: `/sitemap.xml`
+
+## Persistent APIs
+
+- `POST /api/domain-fetch`
+- `GET /api/candidates`
+- `GET /api/candidates/:candidateId`
+- `POST /api/compare-candidates`
+- `POST /api/refine-candidates`
+- `POST /api/shortlist-candidate`
+- `POST /api/watch-auction`
+- `POST /api/acquisition-path`
+
+## Methodology and freshness
+
+- Auction status should be refreshed near action time.
+- Registration availability should be refreshed immediately before handoff.
+- Stale candidates should be treated as pending verification.
+
+## Acquisition behavior
+
+- Snatch.auction prepares acquisition handoff links.
+- Snatch.auction does not auto-purchase, auto-register, auto-bid, or auto-offer.
+- Irreversible actions require explicit human confirmation.
+
+## Safety and data handling
+
+Never expose or log:
+
+- NameSilo API keys
+- account identifiers
+- auth tokens
+- private seller/account fields

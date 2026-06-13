@@ -9,11 +9,14 @@
     return;
   }
 
-  const status = document.querySelector(".candidate-status .badge");
+  const status = document.getElementById("candidate-status-badge") || document.querySelector(".candidate-status .badge");
   const openPath = document.getElementById("open-acquisition-path");
+  const mobileBar = document.querySelector(".candidate-mobile-bar");
+  const mobileBarCta = document.querySelector(".candidate-mobile-bar-cta");
   const refreshBtn = document.getElementById("refresh-candidate");
   const shortlistBtn = document.getElementById("shortlist-candidate");
   const compareBtn = document.getElementById("compare-candidate");
+  const pageParams = new URLSearchParams(window.location.search);
 
   function isExpired() {
     const expiresAt = new Date(candidate.statusExpiresAt || "").getTime();
@@ -23,11 +26,68 @@
 
   function applyStaleUi() {
     if (!isExpired()) return;
-    if (status) status.textContent = "Refresh required";
+    if (status) status.textContent = "Availability needs refresh";
     if (openPath) {
       openPath.setAttribute("aria-disabled", "true");
       openPath.setAttribute("href", "#");
     }
+    if (mobileBarCta) {
+      mobileBarCta.setAttribute("aria-disabled", "true");
+      mobileBarCta.setAttribute("href", "#");
+    }
+  }
+
+  function buildAcquireHref() {
+    const params = new URLSearchParams();
+    params.set("domain", candidate.domain);
+    params.set("candidate_id", candidate.candidateId);
+    params.set("source", "domain-detail");
+    const intentId = pageParams.get("intent_id") || candidate.sessionIntent?.intentId;
+    if (intentId) params.set("intent_id", intentId);
+    const rank = pageParams.get("rank") || candidate.sessionIntent?.rank;
+    const fit = pageParams.get("fit") || candidate.sessionIntent?.fitScore || candidate.scores?.overall;
+    if (rank != null && rank !== "") params.set("rank", String(rank));
+    if (fit != null && fit !== "") params.set("fit", String(fit));
+    return `/out/acquire?${params.toString()}`;
+  }
+
+  function syncAcquireHref() {
+    const href = buildAcquireHref();
+    if (openPath && openPath.getAttribute("aria-disabled") !== "true") {
+      openPath.setAttribute("href", href);
+    }
+    if (mobileBarCta && mobileBarCta.getAttribute("aria-disabled") !== "true") {
+      mobileBarCta.setAttribute("href", href);
+    }
+  }
+
+  function setAcquireDisabled(disabled) {
+    [openPath, mobileBarCta].forEach((node) => {
+      if (!node) return;
+      if (disabled) {
+        node.setAttribute("aria-disabled", "true");
+        node.setAttribute("href", "#");
+      } else {
+        node.removeAttribute("aria-disabled");
+      }
+    });
+  }
+
+  function setupMobileBar() {
+    if (!mobileBar || !mobileBarCta) return;
+    const acquirePanel = document.querySelector(".productActionBlock") || document.querySelector(".productHeroStage");
+    if (!acquirePanel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const showBar = !entry.isIntersecting;
+        mobileBar.hidden = !showBar;
+        mobileBar.classList.toggle("is-visible", showBar);
+        mobileBar.setAttribute("aria-hidden", showBar ? "false" : "true");
+      },
+      { threshold: 0.12 }
+    );
+    observer.observe(acquirePanel);
   }
 
   async function refreshStatus() {
@@ -37,20 +97,29 @@
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload?.error || "Status refresh failed.");
-    candidate = payload;
+    candidate = {
+      ...payload,
+      sessionIntent: candidate.sessionIntent,
+    };
     if (status) {
-      status.textContent = payload.status === "available" ? "Available" : payload.status === "auction-active" ? "Auction active" : "Refresh required";
+      status.textContent =
+        payload.status === "available"
+          ? "Available now"
+          : payload.status === "auction-active"
+          ? "Auction active"
+          : "Availability needs refresh";
     }
-    if (openPath) {
-      if (payload.acquisitionPath?.actionUrl && (payload.status === "available" || payload.status === "auction-active")) {
-        openPath.removeAttribute("aria-disabled");
-        openPath.setAttribute("href", payload.acquisitionPath.actionUrl);
-      } else {
-        openPath.setAttribute("aria-disabled", "true");
-        openPath.setAttribute("href", "#");
-      }
+    const actionable = payload.status === "available" || payload.status === "auction-active";
+    if (actionable) {
+      setAcquireDisabled(false);
+      syncAcquireHref();
+    } else {
+      setAcquireDisabled(true);
     }
-    candidateNode.textContent = JSON.stringify(payload);
+    candidateNode.textContent = JSON.stringify({
+      ...candidate,
+      sessionIntent: candidate.sessionIntent,
+    });
     return payload;
   }
 
@@ -94,23 +163,29 @@
   }
 
   if (openPath) {
-    openPath.addEventListener("click", async (event) => {
-      try {
-        const handoff = await (await fetch("/api/acquisition-path", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ candidateId: candidate.candidateId }),
-        })).json();
-        if (!handoff?.actionUrl) {
-          event.preventDefault();
-          return;
-        }
-        openPath.setAttribute("href", handoff.actionUrl);
-      } catch {
-        event.preventDefault();
-      }
-    });
+    openPath.addEventListener("click", handleAcquireClick);
+  }
+  if (mobileBarCta) {
+    mobileBarCta.addEventListener("click", handleAcquireClick);
+  }
+
+  async function handleAcquireClick(event) {
+    const target = event.currentTarget;
+    if (target.getAttribute("aria-disabled") === "true") {
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    try {
+      await refreshStatus();
+      if (target.getAttribute("aria-disabled") === "true") return;
+    } catch (error) {
+      console.error(error);
+    }
+    window.location.href = buildAcquireHref();
   }
 
   applyStaleUi();
+  syncAcquireHref();
+  setupMobileBar();
 })();

@@ -79,4 +79,6 @@ async function fetchNameSiloAuctions({ apiKey, fetchFn = fetch, pageSize = 100 }
 
 module.exports = {
   fetchNameSiloAuctions,
+  normalizeAuctionRecord,
+  extractAuctionRecords,
 };

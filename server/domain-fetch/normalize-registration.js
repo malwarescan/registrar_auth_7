@@ -1,6 +1,6 @@
 const { classifyDomainType, detectNamingLane, toSlug } = require("./classify-domain");
 
-function normalizeRegistrationCandidate({ generated, intentModel, scores, qualityFlags, whySurfaced, eligible, matchedTerms }) {
+function normalizeRegistrationCandidate({ generated, intentModel, scores, qualityFlags, whySurfaced, eligible, matchedTerms, pricing = {} }) {
   const candidateId = `candidate_${toSlug(generated.domain)}_reg`;
   const statusVerifiedAt = new Date().toISOString();
   const statusExpiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString();
@@ -32,9 +32,9 @@ function normalizeRegistrationCandidate({ generated, intentModel, scores, qualit
     acquisitionPath: {
       type: "register",
       provider: "NameSilo",
-      registrationPrice: undefined,
-      renewalPrice: undefined,
-      priceCurrency: "USD",
+      registrationPrice: pricing.registrationPrice,
+      renewalPrice: pricing.renewalPrice,
+      priceCurrency: pricing.priceCurrency || "USD",
       priceType: "registration-price",
       requiresConfirmation: true,
       actionUrl: `https://www.namesilo.com/domain/search-domains?query=${encodeURIComponent(generated.domain)}`,

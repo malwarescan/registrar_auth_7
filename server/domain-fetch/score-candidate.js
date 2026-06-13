@@ -1,7 +1,7 @@
 const { clampScore } = require("./evaluate-quality");
 
 function scoreCandidate({ root, tld, requiredHits, adjacentHits, quality, acquisitionSignal = 65, acquisitionFriction = 70 }) {
-  const semanticFit = clampScore(44 + requiredHits.length * 14 + adjacentHits.length * 8 - Math.max(0, root.length - 16), 20, 97);
+  const semanticFit = clampScore(46 + requiredHits.length * 14 + adjacentHits.length * 8 - Math.max(0, root.length - 16), 20, 97);
   const buyerFit = clampScore(48 + requiredHits.length * 11 + adjacentHits.length * 7, 20, 96);
   const categoryClarity = clampScore(45 + requiredHits.length * 12 + adjacentHits.length * 7, 20, 97);
   const tldTrust =

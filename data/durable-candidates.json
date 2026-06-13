@@ -1,0 +1,336 @@
+{
+  "brooklynpizza-com": {
+    "slug": "brooklynpizza-com",
+    "domain": "brooklynpizza.com",
+    "tld": ".com",
+    "source": "namesilo-auction",
+    "provider": "NameSilo",
+    "status": "auction-ended",
+    "auctionUrl": "https://www.namesilo.com/auctions/brooklynpizza.com",
+    "currentBid": 120,
+    "bidCount": 1,
+    "auctionEndsAt": "2026-06-13T04:04:42.917Z",
+    "statusVerifiedAt": "2026-06-13T04:04:42.917Z",
+    "statusExpiresAt": "2026-06-13T04:07:42.917Z",
+    "canonicalUrl": "https://snatch.auction/domains/brooklynpizza-com",
+    "acquisitionPath": {
+      "type": "auction",
+      "provider": "NameSilo",
+      "priceCurrency": "USD",
+      "currentBid": 120,
+      "bidCount": 1,
+      "auctionEndsAt": "2026-06-13T04:04:42.917Z",
+      "priceType": "current-bid",
+      "requiresConfirmation": true,
+      "actionUrl": "https://www.namesilo.com/auctions/brooklynpizza.com",
+      "url": "https://www.namesilo.com/auctions/brooklynpizza.com"
+    },
+    "baseScores": {
+      "overall": 83,
+      "semanticFit": 74,
+      "buyerFit": 70,
+      "brandability": 73,
+      "pronounceability": 78,
+      "categoryClarity": 69,
+      "tldTrust": 96,
+      "acquisitionSignal": 82,
+      "acquisitionEase": 82,
+      "acquisitionFriction": 74,
+      "riskAdjusted": 80
+    },
+    "baseSignals": {
+      "matchedTerms": [
+        "pizza",
+        "brooklyn"
+      ],
+      "tld": ".com",
+      "domainType": "brandable",
+      "namingLane": "local-brandable",
+      "length": 13
+    },
+    "qualityFlags": [],
+    "riskFlags": [],
+    "riskNotes": [],
+    "categoryGuesses": [
+      "Commercial software"
+    ],
+    "buyerUseCases": [
+      "Commercial software brand",
+      "Commercial software SaaS"
+    ],
+    "comparableDomains": [],
+    "graphId": "https://snatch.auction/domains/brooklynpizza-com#graph",
+    "published": false,
+    "indexable": false,
+    "seoTier": "archive",
+    "publishedAt": null,
+    "candidateId": "candidate_brooklynpizza-com_auction",
+    "lifecycleState": "ended"
+  },
+  "slicedelivery-com": {
+    "slug": "slicedelivery-com",
+    "domain": "slicedelivery.com",
+    "tld": ".com",
+    "source": "namesilo-auction",
+    "provider": "NameSilo",
+    "status": "auction-ended",
+    "auctionUrl": "https://www.namesilo.com/auctions/slicedelivery.com",
+    "currentBid": 140,
+    "bidCount": 2,
+    "auctionEndsAt": "2026-06-13T04:04:42.917Z",
+    "statusVerifiedAt": "2026-06-13T04:04:42.917Z",
+    "statusExpiresAt": "2026-06-13T04:07:42.917Z",
+    "canonicalUrl": "https://snatch.auction/domains/slicedelivery-com",
+    "acquisitionPath": {
+      "type": "auction",
+      "provider": "NameSilo",
+      "priceCurrency": "USD",
+      "currentBid": 140,
+      "bidCount": 2,
+      "auctionEndsAt": "2026-06-13T04:04:42.917Z",
+      "priceType": "current-bid",
+      "requiresConfirmation": true,
+      "actionUrl": "https://www.namesilo.com/auctions/slicedelivery.com",
+      "url": "https://www.namesilo.com/auctions/slicedelivery.com"
+    },
+    "baseScores": {
+      "overall": 75,
+      "semanticFit": 60,
+      "buyerFit": 59,
+      "brandability": 73,
+      "pronounceability": 78,
+      "categoryClarity": 57,
+      "tldTrust": 96,
+      "acquisitionSignal": 82,
+      "acquisitionEase": 82,
+      "acquisitionFriction": 74,
+      "riskAdjusted": 77
+    },
+    "baseSignals": {
+      "matchedTerms": [
+        "delivery"
+      ],
+      "tld": ".com",
+      "domainType": "brandable",
+      "namingLane": "local-brandable",
+      "length": 13
+    },
+    "qualityFlags": [],
+    "riskFlags": [],
+    "riskNotes": [],
+    "categoryGuesses": [
+      "Commercial software"
+    ],
+    "buyerUseCases": [
+      "Commercial software brand",
+      "Commercial software SaaS"
+    ],
+    "comparableDomains": [],
+    "graphId": "https://snatch.auction/domains/slicedelivery-com#graph",
+    "published": false,
+    "indexable": false,
+    "seoTier": "archive",
+    "publishedAt": null,
+    "candidateId": "candidate_slicedelivery-com_auction",
+    "lifecycleState": "ended"
+  },
+  "aivoicebox-com": {
+    "slug": "aivoicebox-com",
+    "domain": "aivoicebox.com",
+    "tld": ".com",
+    "source": "namesilo-auction",
+    "provider": "NameSilo",
+    "status": "auction-ended",
+    "auctionUrl": "https://www.namesilo.com/auctions/aivoicebox.com",
+    "currentBid": 2,
+    "bidCount": 0,
+    "auctionEndsAt": "2026-06-13T04:04:42.919Z",
+    "statusVerifiedAt": "2026-06-13T04:04:42.919Z",
+    "statusExpiresAt": "2026-06-13T04:07:42.919Z",
+    "canonicalUrl": "https://snatch.auction/domains/aivoicebox-com",
+    "acquisitionPath": {
+      "type": "auction",
+      "provider": "NameSilo",
+      "priceCurrency": "USD",
+      "currentBid": 2,
+      "bidCount": 0,
+      "auctionEndsAt": "2026-06-13T04:04:42.919Z",
+      "priceType": "current-bid",
+      "requiresConfirmation": true,
+      "actionUrl": "https://www.namesilo.com/auctions/aivoicebox.com",
+      "url": "https://www.namesilo.com/auctions/aivoicebox.com"
+    },
+    "baseScores": {
+      "overall": 76,
+      "semanticFit": 60,
+      "buyerFit": 59,
+      "brandability": 75,
+      "pronounceability": 78,
+      "categoryClarity": 57,
+      "tldTrust": 96,
+      "acquisitionSignal": 82,
+      "acquisitionEase": 82,
+      "acquisitionFriction": 74,
+      "riskAdjusted": 77
+    },
+    "baseSignals": {
+      "matchedTerms": [
+        "ai"
+      ],
+      "tld": ".com",
+      "domainType": "brandable",
+      "namingLane": "local-brandable",
+      "length": 10
+    },
+    "qualityFlags": [],
+    "riskFlags": [],
+    "riskNotes": [],
+    "categoryGuesses": [
+      "Commercial software"
+    ],
+    "buyerUseCases": [
+      "Commercial software brand",
+      "Commercial software SaaS"
+    ],
+    "comparableDomains": [],
+    "graphId": "https://snatch.auction/domains/aivoicebox-com#graph",
+    "published": false,
+    "indexable": false,
+    "seoTier": "archive",
+    "publishedAt": null,
+    "candidateId": "candidate_aivoicebox-com_auction",
+    "lifecycleState": "ended"
+  },
+  "savingjaiden-com": {
+    "slug": "savingjaiden-com",
+    "domain": "savingjaiden.com",
+    "tld": ".com",
+    "source": "namesilo-auction",
+    "provider": "NameSilo",
+    "status": "auction-ended",
+    "auctionUrl": "https://www.namesilo.com/auctions/savingjaiden.com",
+    "currentBid": 1,
+    "bidCount": 0,
+    "auctionEndsAt": "2026-06-13T04:04:42.919Z",
+    "statusVerifiedAt": "2026-06-13T04:04:42.919Z",
+    "statusExpiresAt": "2026-06-13T04:07:42.919Z",
+    "canonicalUrl": "https://snatch.auction/domains/savingjaiden-com",
+    "acquisitionPath": {
+      "type": "auction",
+      "provider": "NameSilo",
+      "priceCurrency": "USD",
+      "currentBid": 1,
+      "bidCount": 0,
+      "auctionEndsAt": "2026-06-13T04:04:42.919Z",
+      "priceType": "current-bid",
+      "requiresConfirmation": true,
+      "actionUrl": "https://www.namesilo.com/auctions/savingjaiden.com",
+      "url": "https://www.namesilo.com/auctions/savingjaiden.com"
+    },
+    "baseScores": {
+      "overall": 0,
+      "semanticFit": 46,
+      "buyerFit": 48,
+      "brandability": 75,
+      "pronounceability": 78,
+      "categoryClarity": 45,
+      "tldTrust": 96,
+      "acquisitionSignal": 82,
+      "acquisitionEase": 82,
+      "acquisitionFriction": 74,
+      "riskAdjusted": 74
+    },
+    "baseSignals": {
+      "matchedTerms": [],
+      "tld": ".com",
+      "domainType": "brandable",
+      "namingLane": "local-brandable",
+      "length": 12
+    },
+    "qualityFlags": [],
+    "riskFlags": [],
+    "riskNotes": [],
+    "categoryGuesses": [
+      "Commercial software"
+    ],
+    "buyerUseCases": [
+      "Commercial software brand",
+      "Commercial software SaaS"
+    ],
+    "comparableDomains": [],
+    "graphId": "https://snatch.auction/domains/savingjaiden-com#graph",
+    "published": false,
+    "indexable": false,
+    "seoTier": "archive",
+    "publishedAt": null,
+    "candidateId": "candidate_savingjaiden-com_auction",
+    "lifecycleState": "ended"
+  },
+  "anudesk-com": {
+    "slug": "anudesk-com",
+    "domain": "anudesk.com",
+    "tld": ".com",
+    "source": "namesilo-auction",
+    "provider": "NameSilo",
+    "status": "auction-active",
+    "auctionUrl": "https://www.namesilo.com/auctions/anudesk.com",
+    "currentBid": 5,
+    "bidCount": 1,
+    "auctionEndsAt": "2026-06-13T05:04:43.118Z",
+    "statusVerifiedAt": "2026-06-13T04:04:43.119Z",
+    "statusExpiresAt": "2026-06-13T04:19:43.119Z",
+    "canonicalUrl": "https://snatch.auction/domains/anudesk-com",
+    "acquisitionPath": {
+      "type": "auction",
+      "provider": "NameSilo",
+      "priceCurrency": "USD",
+      "currentBid": 5,
+      "bidCount": 1,
+      "auctionEndsAt": "2026-06-13T05:04:43.118Z",
+      "priceType": "current-bid",
+      "requiresConfirmation": true,
+      "actionUrl": "https://www.namesilo.com/auctions/anudesk.com",
+      "url": "https://www.namesilo.com/auctions/anudesk.com"
+    },
+    "baseScores": {
+      "overall": 79,
+      "semanticFit": 62,
+      "buyerFit": 58,
+      "brandability": 75,
+      "pronounceability": 78,
+      "categoryClarity": 72,
+      "tldTrust": 96,
+      "acquisitionSignal": 82,
+      "acquisitionEase": 82,
+      "acquisitionFriction": 20,
+      "riskAdjusted": 83
+    },
+    "baseSignals": {
+      "matchedTerms": [],
+      "tld": ".com",
+      "domainType": "brandable",
+      "namingLane": "local-brandable",
+      "length": 7
+    },
+    "qualityFlags": [],
+    "riskFlags": [],
+    "riskNotes": [],
+    "categoryGuesses": [
+      "Brandable startup"
+    ],
+    "buyerUseCases": [
+      "Brandable startup brand",
+      "Brandable startup SaaS",
+      "Workflow operations",
+      "Front-office software"
+    ],
+    "comparableDomains": [],
+    "graphId": "https://snatch.auction/domains/anudesk-com#graph",
+    "published": false,
+    "indexable": false,
+    "seoTier": "hold-noindex",
+    "publishedAt": null,
+    "candidateId": "product_anudesk-com",
+    "lifecycleState": "active"
+  }
+}

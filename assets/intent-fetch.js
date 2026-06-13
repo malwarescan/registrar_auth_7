@@ -88,7 +88,7 @@ const sourceLabel = {
   suggestion: "Generated Suggestion",
   "generated-available": "Available at NameSilo",
   "namesilo-auction": "Live NameSilo Auction",
-  "namesilo-available": "Available at NameSilo",
+  "namesilo-available": "Generated available at NameSilo",
 };
 
 const salesModeLabel = {
@@ -1089,6 +1089,9 @@ function sortOpportunities(opps) {
   const sorted = [...opps];
   if (state.sortMode === "fetch-match") {
     sorted.sort((a, b) => b.fetchMatch - a.fetchMatch);
+    const auctions = sorted.filter((item) => item.source === "auction" || item.source === "namesilo-auction");
+    const nonAuctions = sorted.filter((item) => item.source !== "auction" && item.source !== "namesilo-auction");
+    return [...auctions, ...nonAuctions];
   } else if (state.sortMode === "snatch-signal") {
     sorted.sort((a, b) => getSignalRank(b.snatchSignal) - getSignalRank(a.snatchSignal) || b.fetchMatch - a.fetchMatch);
   } else {
@@ -1254,6 +1257,56 @@ function renderExpandPanel(opportunity, expanded) {
   `;
 }
 
+function buildOfferSchemaMarkup(opportunity, domainSlug, isLiveAuction, isRegisterPath) {
+  const numericPrice =
+    isLiveAuction && typeof opportunity.currentBid === "number"
+      ? opportunity.currentBid
+      : typeof opportunity.registrationPrice === "number"
+      ? opportunity.registrationPrice
+      : typeof opportunity.price === "number"
+      ? opportunity.price
+      : null;
+
+  if (typeof numericPrice !== "number" || !Number.isFinite(numericPrice)) return "";
+
+  const actionUrl = isLiveAuction
+    ? opportunity.auctionUrl || `/domains/${domainSlug}`
+    : opportunity.registrationUrl || `/domains/${domainSlug}`;
+  const availabilityUrl =
+    opportunity.salesMode === "register" || isRegisterPath
+      ? "https://schema.org/InStock"
+      : opportunity.salesMode === "auction" || isLiveAuction
+      ? "https://schema.org/LimitedAvailability"
+      : "https://schema.org/PreOrder";
+  const sourceType = isLiveAuction ? "live-auction" : "custom-generated-available";
+
+  return `
+    <div class="sr-only" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+      <meta itemprop="priceCurrency" content="USD" />
+      <meta itemprop="price" content="${numericPrice}" />
+      <span itemprop="priceSpecification" itemscope itemtype="https://schema.org/UnitPriceSpecification">
+        <meta itemprop="priceCurrency" content="USD" />
+        <meta itemprop="price" content="${numericPrice}" />
+        <meta itemprop="name" content="${isLiveAuction ? "current-bid" : "registration-price"}" />
+      </span>
+      <link itemprop="availability" href="${availabilityUrl}" />
+      <link itemprop="url" href="${actionUrl}" />
+      <span itemprop="seller" itemscope itemtype="https://schema.org/Organization">
+        <meta itemprop="name" content="NameSilo" />
+      </span>
+      <span itemprop="additionalProperty" itemscope itemtype="https://schema.org/PropertyValue">
+        <meta itemprop="name" content="acquisition-source" />
+        <meta itemprop="value" content="${sourceType}" />
+      </span>
+      ${
+        isLiveAuction && opportunity.auctionEndsOnUtc
+          ? `<meta itemprop="priceValidUntil" content="${opportunity.auctionEndsOnUtc}" />`
+          : ""
+      }
+    </div>
+  `;
+}
+
 function openIntelligenceModal(candidateId) {
   const candidate = state.opportunities.find((entry) => entry.id === candidateId);
   if (!candidate || !dom.intelligenceModal || !dom.intelligenceModalBody) return;
@@ -1306,17 +1359,32 @@ function renderOpportunityCard(opportunity, index) {
   }
 
   const domainSlug = getDomainSlug(opportunity.domain);
+  const offerSchemaMarkup = buildOfferSchemaMarkup(opportunity, domainSlug, isLiveAuction, isRegisterPath);
+  const priceBadge = isLiveAuction
+    ? `Current bid $${Number(opportunity.currentBid || 0).toLocaleString()}`
+    : typeof opportunity.registrationPrice === "number"
+    ? `Register $${Number(opportunity.registrationPrice).toLocaleString()}`
+    : "Price unavailable";
 
   return `
     <article class="card opportunity-card ${state.fetchState === "refining" ? "refining" : ""}" style="animation-delay:${Math.min(
       index * 55,
       330
-    )}ms;">
+    )}ms;" itemscope itemtype="https://schema.org/Product">
+      <meta itemprop="name" content="${opportunity.domain}" />
+      <meta itemprop="sku" content="${opportunity.id}" />
+      <meta itemprop="category" content="Domain name" />
+      <link itemprop="url" href="/domains/${domainSlug}" />
+      <span itemprop="brand" itemscope itemtype="https://schema.org/Brand">
+        <meta itemprop="name" content="${opportunity.domain}" />
+      </span>
+      ${offerSchemaMarkup}
       <div class="card-top">
         <a class="domain-name mono" href="/domains/${domainSlug}">${opportunity.domain}</a>
         <div class="badge-row">
           <span class="badge">${sourceLabel[opportunity.source]}</span>
           <span class="badge">${salesModeLabel[opportunity.salesMode] || "Acquisition"}</span>
+          <span class="badge green">${priceBadge}</span>
           <span class="badge blue">Candidate Confidence ${opportunity.fetchMatch}</span>
           <span class="badge ${signalClass}">${signalValue[0].toUpperCase() + signalValue.slice(1)} Deal Signal</span>
         </div>
@@ -1817,6 +1885,7 @@ async function runFetch() {
   };
   state.lastFetchTimestamp = new Date().toISOString();
   state.expandedId = null;
+  state.activeFilters = [];
   state.compareIds = [];
   state.watchedIds = [];
   state.fetchState = "fetching";

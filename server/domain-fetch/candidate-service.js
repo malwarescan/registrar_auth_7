@@ -10,17 +10,24 @@ const { normalizeRegistrationCandidate } = require("./normalize-registration");
 const { buildExplanation, buildTradeoffs } = require("./build-explanation");
 const { compareDomainCandidates } = require("./compare-candidates");
 const { applyRefinement } = require("./refine-candidates");
+const {
+  buildCandidateMatchedIntents,
+  createIntentRecord,
+  attachIntentSessionResults,
+} = require("./intent-session");
+const { logDemandSignalFromFetch } = require("../demand-signals");
 
 const workspaces = new Map();
 const candidatesById = new Map();
 const shortlistBySession = new Map();
 const watchlistBySession = new Map();
-let lastPublicCandidates = [];
+// Session-only inventory from the latest Intent Fetch runs. Not SEO/public catalog.
+let sessionCandidates = [];
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || "https://snatch.auction";
 
 function toPublicSourceLabel(source) {
   if (source === "namesilo-auction") return "Live NameSilo Auction";
-  if (source === "namesilo-available") return "Available at NameSilo";
+  if (source === "namesilo-available") return "Custom generated · Available at NameSilo";
   if (source === "namesilo-premium") return "NameSilo Premium Listing";
   return "Domain Candidate";
 }
@@ -41,10 +48,39 @@ function createId(prefix) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
 }
 
+function extractDomainRoot(domain) {
+  return String(domain || "")
+    .toLowerCase()
+    .replace(/\.[a-z0-9-]+$/, "");
+}
+
+function hasMeaningfulMatch(root, token) {
+  const normalizedToken = String(token || "").toLowerCase().trim();
+  if (!normalizedToken) return false;
+  if (root === normalizedToken) return true;
+
+  // Prevent accidental short-token substring hits ("ai" in "savingjaiden").
+  if (normalizedToken.length <= 2) {
+    return (
+      root.startsWith(normalizedToken) ||
+      root.endsWith(normalizedToken) ||
+      root.includes(`-${normalizedToken}`) ||
+      root.includes(`${normalizedToken}-`)
+    );
+  }
+
+  return (
+    root.startsWith(normalizedToken) ||
+    root.endsWith(normalizedToken) ||
+    root.includes(`-${normalizedToken}`) ||
+    root.includes(`${normalizedToken}-`)
+  );
+}
+
 function findMatchedTerms(domain, intentModel) {
-  const lower = String(domain || "").toLowerCase();
-  const required = intentModel.requiredConcepts.filter((term) => lower.includes(term));
-  const adjacent = intentModel.adjacentConcepts.filter((term) => lower.includes(term));
+  const root = extractDomainRoot(domain);
+  const required = intentModel.requiredConcepts.filter((term) => hasMeaningfulMatch(root, term));
+  const adjacent = intentModel.adjacentConcepts.filter((term) => hasMeaningfulMatch(root, term));
   return [...new Set([...required, ...adjacent])];
 }
 
@@ -64,16 +100,31 @@ function enrichCandidate(candidate, intentModel, matchedTerms) {
   candidate.canonicalUrl = `${PUBLIC_BASE_URL}/domains/${candidate.slug}`;
   candidate.publicSourceLabel = toPublicSourceLabel(candidate.source);
   candidate.namingLaneLabel = toPublicNamingLane(candidate.namingLane);
+  if (candidate.acquisitionPath?.type === "auction") {
+    candidate.currentBid = candidate.acquisitionPath.currentBid;
+    candidate.bidCount = candidate.acquisitionPath.bidCount;
+  }
+  if (candidate.acquisitionPath?.type === "register") {
+    candidate.registrationPrice = candidate.acquisitionPath.registrationPrice;
+    candidate.renewalPrice = candidate.acquisitionPath.renewalPrice;
+  }
   return candidate;
 }
 
 function setAlternatives(candidates) {
+  candidates.forEach((candidate, index) => {
+    candidate.sessionRank = index + 1;
+  });
   const compact = candidates.map((c) => ({
     candidateId: c.candidateId,
     domain: c.domain,
     url: `/domains/${c.domain.replace(/\./g, "-")}`,
     status: c.status,
+    rank: c.sessionRank,
     fitScore: c.scores?.overall || 0,
+    scores: c.scores,
+    registrationPrice: c.registrationPrice ?? c.acquisitionPath?.registrationPrice,
+    currentBid: c.currentBid ?? c.acquisitionPath?.currentBid,
     matchReason:
       c.namingLaneLabel || c.namingLane || "Semantically related alternative",
   }));
@@ -109,7 +160,14 @@ async function fetchDomainCandidates({ brief, constraints = {}, limit = 10, fetc
 
   let auctionCandidates = [];
   try {
-    const auctions = constraints.includeAuctions === false ? [] : await fetchNameSiloAuctions({ apiKey, fetchFn });
+    const auctions =
+      constraints.includeAuctions === false
+        ? []
+        : await fetchNameSiloAuctions({
+            apiKey,
+            fetchFn,
+            pageSize: Number(constraints.auctionPageSize) || 300,
+          });
     sourceSummary.auctionRecordsScanned = auctions.length;
     auctionCandidates = auctions.map((auction) => {
       const quality = evaluateQuality(auction.root);
@@ -199,6 +257,7 @@ async function fetchDomainCandidates({ brief, constraints = {}, limit = 10, fetc
             whySurfaced: "",
             eligible: false,
             matchedTerms,
+            pricing: availability.availabilityByDomain?.get(item.domain) || {},
           });
           candidate.eligibleDecisionCandidate = isEligibleCandidate(candidate);
           if (!candidate.eligibleDecisionCandidate) {
@@ -232,11 +291,49 @@ async function fetchDomainCandidates({ brief, constraints = {}, limit = 10, fetc
     .slice(0, Math.max(1, Number(limit) || 10));
 
   setAlternatives(decisionCandidates);
-  decisionCandidates.forEach((candidate) => candidatesById.set(candidate.candidateId, candidate));
-  lastPublicCandidates = decisionCandidates.slice(0, 50);
+  const intentRecord = createIntentRecord({
+    brief,
+    interpretedIntent,
+    strategy,
+    fetchedAt,
+    requestId,
+  });
+  attachIntentSessionResults(intentRecord, {
+    candidateCount: decisionCandidates.length,
+    decisionCandidates,
+  });
+  decisionCandidates.forEach((candidate) => {
+    candidate.matchedIntents = buildCandidateMatchedIntents(candidate, intentRecord);
+    candidate.intentId = intentRecord.intentId;
+    candidate.intentLabel = intentRecord.label;
+    candidatesById.set(candidate.candidateId, candidate);
+  });
+  sessionCandidates = decisionCandidates.slice(0, 50);
+
+  auctionCandidates
+    .filter((candidate) => candidate.source === "namesilo-auction" && candidate.acquisitionPath?.actionUrl)
+    .forEach((candidate) => {
+      try {
+        const { upsertDurableCandidate } = require("../candidate-store/durable-candidates");
+        upsertDurableCandidate(candidate);
+      } catch {
+        // Durable persistence should not block intent fetch.
+      }
+    });
+
+  logDemandSignalFromFetch({
+    intentRecord,
+    decisionCandidates,
+    fetchedAt,
+    sessionId: requestId,
+  });
 
   const workspace = {
     requestId,
+    intentId: intentRecord.intentId,
+    intentSlug: intentRecord.intentSlug,
+    intentCategory: intentRecord.intentCategory,
+    buyerProfile: intentRecord.buyerProfile,
     brief,
     constraints,
     fetchedAt,
@@ -252,6 +349,10 @@ async function fetchDomainCandidates({ brief, constraints = {}, limit = 10, fetc
 
   return {
     requestId,
+    intent_id: intentRecord.intentId,
+    intent_slug: intentRecord.intentSlug,
+    intent_category: intentRecord.intentCategory,
+    buyer_profile: intentRecord.buyerProfile,
     brief,
     fetchedAt,
     interpretedIntent,
@@ -423,13 +524,30 @@ async function openAcquisitionPath({ candidateId, apiKey, fetchFn = fetch }) {
   };
 }
 
+function listSessionCandidates() {
+  return sessionCandidates;
+}
+
+/** @deprecated Session inventory — not durable SEO catalog. Use listPublishedCandidates(). */
 function listPublicCandidates() {
-  return lastPublicCandidates;
+  return listSessionCandidates();
+}
+
+function findSessionCandidateBySlug(slug) {
+  const normalized = String(slug || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "");
+  if (!normalized) return null;
+
+  for (const candidate of candidatesById.values()) {
+    if (candidate.domain.replace(/\./g, "-") === normalized) return candidate;
+  }
+
+  return sessionCandidates.find((candidate) => candidate.domain.replace(/\./g, "-") === normalized) || null;
 }
 
 function findCandidateBySlug(slug) {
-  const normalized = String(slug || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
-  return lastPublicCandidates.find((candidate) => candidate.domain.replace(/\./g, "-") === normalized);
+  return findSessionCandidateBySlug(slug);
 }
 
 module.exports = {
@@ -442,7 +560,9 @@ module.exports = {
   addWatchAuction,
   refreshCandidateStatus,
   openAcquisitionPath,
+  listSessionCandidates,
   listPublicCandidates,
+  findSessionCandidateBySlug,
   findCandidateBySlug,
   isStatusStale,
 };

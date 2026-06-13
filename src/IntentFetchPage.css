@@ -1,0 +1,1604 @@
+:root {
+  color-scheme: light;
+  --page-max: 1120px;
+  --page-gutter: 24px;
+  --nav-h: 72px;
+  --if-ink: #0f1933;
+  --if-muted: #60708f;
+  --if-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --if-fit: #315eff;
+  --if-cta: #5572ff;
+  --if-border: rgba(190, 205, 230, 0.68);
+  --if-card-bg: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+  --skeleton-base: rgba(225, 232, 246, 0.72);
+  --skeleton-highlight: rgba(245, 248, 255, 0.95);
+
+  --hero-h-idle: clamp(440px, 50vh, 520px);
+  --hero-h-compact: 220px;
+  --hero-pad-x: 48px;
+  --hero-pad-y: clamp(56px, 6vw, 76px);
+  --command-h: 72px;
+  --hero-radius: 28px;
+  --hero-content-max: 100%;
+  --hero-to-results: 0px;
+  --motion-duration: 560ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --logo-hero-gap: 48px;
+  --logo-width-idle: 390px;
+  --logo-width-compact: 240px;
+}
+
+.intentPage[data-state="idle"],
+.intentPage[data-state="typing"] {
+  --hero-shell-h: clamp(440px, 50vh, 520px);
+  --hero-pad-x: 48px;
+  --hero-pad-y: clamp(56px, 6vw, 76px);
+  --hero-pad-top: clamp(56px, 6vw, 76px);
+  --hero-pad-bottom: clamp(64px, 7vw, 88px);
+  --command-h: 72px;
+}
+
+.intentPage {
+  --hero-shell-h: 420px;
+  --hero-pad-top: var(--hero-pad-y);
+  --hero-pad-bottom: var(--hero-pad-y);
+  --results-gap: 0px;
+}
+
+.intentPage[data-state="searching"],
+.intentPage[data-state="revealing"],
+.intentPage[data-state="complete"],
+.intentPage[data-state="empty"],
+.intentPage[data-state="error"] {
+  --hero-shell-h: 220px;
+  --hero-pad-x: 32px;
+  --hero-pad-y: 32px;
+  --hero-pad-top: 28px;
+  --hero-pad-bottom: 28px;
+  --command-h: 64px;
+  --results-gap: 0px;
+  --logo-hero-gap: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--if-ink);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.ifPageContainer {
+  width: min(var(--page-max), calc(100vw - var(--page-gutter) * 2));
+  margin-inline: auto;
+}
+
+.ifSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VIEWPORT CENTERLINE LOCK — DO NOT MODIFY
+   Intent Fetch header + hero horizontal layout is frozen.
+   Spec: brand+hero stack in hero-wrap | logo 390px | 48px gap | horizontal center locked
+   Regression: tests/intent-fetch-layout-lock.test.js
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body.intent-fetch-page,
+#intent-fetch-root {
+  display: block;
+  padding: 0;
+  margin: 0;
+}
+
+.page {
+  min-height: 100vh;
+  width: 100%;
+  background: #f5f7fb;
+  padding: 0;
+  margin: 0;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.page.intentPage {
+  display: block;
+  align-items: unset;
+  justify-content: unset;
+  place-items: unset;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.site-header {
+  position: relative;
+  width: 100vw;
+  height: auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 auto;
+  z-index: 10;
+}
+
+.site-logo {
+  display: block;
+  width: var(--logo-width-idle);
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  transform: none;
+  position: static;
+  pointer-events: auto;
+  transition: width var(--motion-duration) var(--motion-ease);
+}
+
+.site-logo .snatchLogoMark {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
+}
+
+.snatchBrand.site-logo {
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: 0;
+}
+
+.hero-wrap {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--logo-hero-gap);
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  transition:
+    min-height var(--motion-duration) var(--motion-ease),
+    padding var(--motion-duration) var(--motion-ease),
+    gap var(--motion-duration) var(--motion-ease);
+}
+
+.intentPage[data-state="idle"] .hero-wrap,
+.intentPage[data-state="typing"] .hero-wrap {
+  min-height: 100vh;
+  justify-content: flex-start;
+  padding-top: clamp(40px, 10vh, 88px);
+}
+
+.intentPage[data-state="searching"] .hero-wrap,
+.intentPage[data-state="revealing"] .hero-wrap,
+.intentPage[data-state="complete"] .hero-wrap,
+.intentPage[data-state="empty"] .hero-wrap,
+.intentPage[data-state="error"] .hero-wrap {
+  min-height: auto;
+  justify-content: flex-start;
+  padding-top: 28px;
+}
+
+.intentPage[data-state="searching"] .site-logo,
+.intentPage[data-state="revealing"] .site-logo,
+.intentPage[data-state="complete"] .site-logo,
+.intentPage[data-state="empty"] .site-logo,
+.intentPage[data-state="error"] .site-logo {
+  width: var(--logo-width-compact);
+}
+
+.hero-wrap > .site-header {
+  width: 100vw;
+}
+
+.hero-card {
+  width: min(1240px, calc(100vw - 220px));
+  margin: 0 auto;
+  transform: none;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.hero-card.heroGlow {
+  width: min(1240px, calc(100vw - 220px));
+}
+
+.hero-card.heroGlow.border-glow-card {
+  transform: none;
+}
+
+.intent-fetch-page .container,
+.intent-fetch-page .hero,
+.intent-fetch-page .landing,
+.intent-fetch-page .screen,
+.intent-fetch-page .hero-section,
+.intent-fetch-page .top-nav,
+.intent-fetch-page .ifPageContainer {
+  display: block;
+  min-height: unset;
+  height: auto;
+  padding-top: 0;
+  margin-top: 0;
+  align-items: unset;
+  justify-content: unset;
+  place-items: unset;
+  transform: none;
+}
+
+.heroGlow {
+  width: 100%;
+  border-radius: var(--hero-radius);
+  transition: box-shadow 360ms ease;
+}
+
+.heroGlow.border-glow-card {
+  --glow-padding: 0px;
+  border: none;
+  overflow: hidden;
+  transform: none;
+  isolation: auto;
+  background: transparent;
+  box-shadow:
+    0 40px 80px rgba(7, 16, 31, 0.08),
+    0 8px 24px rgba(7, 16, 31, 0.05);
+}
+
+.intentPage[data-state="idle"] .heroGlow.border-glow-card,
+.intentPage[data-state="typing"] .heroGlow.border-glow-card {
+  box-shadow:
+    0 40px 80px rgba(7, 16, 31, 0.1),
+    0 8px 24px rgba(7, 16, 31, 0.06),
+    0 0 0 1px rgba(7, 16, 31, 0.04);
+}
+
+.intentPage[data-state="searching"] .heroGlow.border-glow-card,
+.intentPage[data-state="revealing"] .heroGlow.border-glow-card,
+.intentPage[data-state="complete"] .heroGlow.border-glow-card,
+.intentPage[data-state="empty"] .heroGlow.border-glow-card,
+.intentPage[data-state="error"] .heroGlow.border-glow-card {
+  box-shadow: 0 16px 48px rgba(15, 22, 60, 0.14);
+  border-radius: var(--hero-radius);
+}
+
+.heroGlow.border-glow-card::before,
+.heroGlow.border-glow-card::after {
+  content: none;
+  display: none;
+}
+
+.heroGlow.border-glow-card > .edge-light {
+  display: none;
+}
+
+.ifEntranceHero {
+  animation: ifHeroEnter 0.55s var(--if-ease) both;
+}
+
+.heroGlow .border-glow-inner {
+  overflow: hidden;
+  border-radius: var(--hero-radius);
+  display: block;
+}
+
+/* ── Hero sizing system ──
+   HERO POLISH LOCK — DO NOT MODIFY (command bar, pills, typography, radius, depth)
+   Regression: tests/intent-fetch-layout-lock.test.js
+   Idle vertical breathing only: --hero-shell-h + --hero-pad-top/bottom on idle/typing states ── */
+
+.intentPage[data-state="idle"] .hero-card,
+.intentPage[data-state="typing"] .hero-card {
+  min-height: clamp(440px, 50vh, 520px);
+}
+
+.intentPage[data-state="idle"] .intentHero,
+.intentPage[data-state="typing"] .intentHero {
+  height: auto;
+  min-height: var(--hero-shell-h);
+}
+
+.intentHero {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: var(--hero-radius);
+  height: var(--hero-shell-h);
+  min-height: var(--hero-shell-h);
+  background: #080a24;
+  box-shadow: none;
+  transition:
+    height var(--motion-duration) var(--motion-ease),
+    min-height var(--motion-duration) var(--motion-ease),
+    border-radius var(--motion-duration) var(--motion-ease);
+}
+
+.heroVisual,
+.heroVisual .lightfall-container,
+.intentHero canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.heroVisual {
+  z-index: 0;
+  opacity: 1;
+  transition:
+    opacity 420ms var(--if-ease),
+    filter 420ms var(--if-ease);
+}
+
+.intentPage[data-state="searching"] .heroVisual,
+.intentPage[data-state="revealing"] .heroVisual {
+  opacity: 1;
+  filter: saturate(1.08) brightness(1.05);
+}
+
+.intentPage[data-state="complete"] .heroVisual,
+.intentPage[data-state="empty"] .heroVisual,
+.intentPage[data-state="error"] .heroVisual {
+  opacity: 0.72;
+  filter: saturate(0.95) brightness(0.9);
+}
+
+.heroVisual .lightfall-container {
+  width: 100%;
+  height: 100%;
+}
+
+.heroContent,
+.intentHeroContent {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  width: 100%;
+  max-width: none;
+  padding: var(--hero-pad-top) var(--hero-pad-x) var(--hero-pad-bottom);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  pointer-events: none;
+  transition: padding var(--motion-duration) var(--motion-ease);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO STACK LOCK — DO NOT MODIFY
+   Spec: heroStack gap 22px | detectedSlot reserve | command shadow/z-index
+         hasDetectedSignals overflow | command 76px | input min-height 60px
+         idle/typing heroContent flex-start anchor
+         suggestions below command bar
+   Regression: tests/intent-fetch-layout-lock.test.js
+   Signal labels: tests/intent-fetch-signals.test.mjs
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.intentPage[data-state="idle"] .heroContent,
+.intentPage[data-state="typing"] .heroContent,
+.intentPage[data-state="idle"] .intentHeroContent,
+.intentPage[data-state="typing"] .intentHeroContent {
+  justify-content: flex-start;
+}
+
+.heroStack {
+  width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  pointer-events: none;
+}
+
+.heroPromo {
+  display: block;
+}
+
+.heroPromoInner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.heroHeadline {
+  max-width: 720px;
+  margin: 0 0 16px;
+  font-size: clamp(44px, 5vw, 68px);
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.42);
+}
+
+.heroSubcopy {
+  max-width: 560px;
+  margin: 0 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: rgba(235, 240, 255, 0.68);
+}
+
+.detectedSlot {
+  width: 100%;
+  max-width: 880px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+  flex: 0 0 auto;
+}
+
+.detectedSlot--active {
+  min-height: 34px;
+}
+
+.intentPage[data-state="idle"] .heroStack,
+.intentPage[data-state="typing"] .heroStack {
+  flex: 1 1 auto;
+  gap: 18px;
+  min-height: calc(var(--hero-shell-h) - var(--hero-pad-top) - var(--hero-pad-bottom));
+}
+
+.intentPage[data-state="idle"] .detectedSlot--active,
+.intentPage[data-state="typing"] .detectedSlot--active {
+  margin-top: 0;
+}
+
+.intentPage[data-state="searching"] .heroPromo,
+.intentPage[data-state="revealing"] .heroPromo,
+.intentPage[data-state="complete"] .heroPromo,
+.intentPage[data-state="empty"] .heroPromo,
+.intentPage[data-state="error"] .heroPromo {
+  display: none;
+  pointer-events: none;
+}
+
+.intentPage[data-state="searching"] .heroContent,
+.intentPage[data-state="revealing"] .heroContent,
+.intentPage[data-state="complete"] .heroContent,
+.intentPage[data-state="empty"] .heroContent,
+.intentPage[data-state="error"] .heroContent,
+.intentPage[data-state="searching"] .intentHeroContent,
+.intentPage[data-state="revealing"] .intentHeroContent,
+.intentPage[data-state="complete"] .intentHeroContent,
+.intentPage[data-state="empty"] .intentHeroContent,
+.intentPage[data-state="error"] .intentHeroContent {
+  justify-content: center;
+  align-items: center;
+}
+
+.intentPage[data-state="searching"] .heroStack,
+.intentPage[data-state="revealing"] .heroStack,
+.intentPage[data-state="complete"] .heroStack,
+.intentPage[data-state="empty"] .heroStack,
+.intentPage[data-state="error"] .heroStack {
+  gap: 0;
+  align-items: center;
+  width: 100%;
+}
+
+.intentPage[data-state="searching"] .detectedSlot,
+.intentPage[data-state="revealing"] .detectedSlot,
+.intentPage[data-state="complete"] .detectedSlot,
+.intentPage[data-state="empty"] .detectedSlot,
+.intentPage[data-state="error"] .detectedSlot {
+  display: none;
+}
+
+.heroAux {
+  overflow: hidden;
+}
+
+.heroContent.hasDetectedSignals .heroPromoInner,
+.heroContent.hasDetectedSignals .heroAux {
+  overflow: visible;
+}
+
+/* ── Command input ── */
+
+.commandShell,
+.inputShell {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 880px;
+  min-height: 76px;
+  height: var(--command-h);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px;
+  margin: 0 auto;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(7, 16, 31, 0.1);
+  box-shadow:
+    0 18px 42px rgba(7, 16, 31, 0.16),
+    0 4px 14px rgba(7, 16, 31, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.65);
+  overflow: hidden;
+  pointer-events: auto;
+  transition:
+    box-shadow 0.2s var(--if-ease),
+    border-color 0.2s var(--if-ease),
+    opacity 0.25s var(--if-ease);
+}
+
+.intentPage[data-state="idle"] .commandShell,
+.intentPage[data-state="typing"] .commandShell {
+  padding: 8px;
+}
+
+.intentPage[data-state="searching"] .commandShell,
+.intentPage[data-state="revealing"] .commandShell,
+.intentPage[data-state="complete"] .commandShell,
+.intentPage[data-state="empty"] .commandShell,
+.intentPage[data-state="error"] .commandShell {
+  height: 64px;
+  min-height: 64px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.intentPage[data-state="idle"] .commandShell,
+.intentPage[data-state="typing"] .commandShell {
+  min-height: 76px;
+  height: 76px;
+  max-width: 880px;
+}
+
+.inputShell--locked {
+  opacity: 0.94;
+}
+
+.commandShell:focus-within,
+.inputShell:focus-within,
+.inputShell.focused {
+  outline: none;
+  border-color: rgba(79, 108, 255, 0.42);
+  box-shadow:
+    0 18px 42px rgba(7, 16, 31, 0.18),
+    0 4px 14px rgba(7, 16, 31, 0.1),
+    0 0 0 4px rgba(79, 108, 255, 0.14);
+}
+
+.commandInput,
+.intentInput {
+  width: 100%;
+  height: calc(var(--command-h) - 12px);
+  min-height: 0;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 0 16px 0 24px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: #07101f;
+}
+
+.intentPage[data-state="idle"] .commandInput,
+.intentPage[data-state="typing"] .commandInput {
+  height: calc(var(--command-h) - 16px);
+}
+
+.commandShell::before,
+.inputShell::before {
+  content: "›";
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(79, 108, 255, 0.72);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.commandInput::placeholder,
+.intentInput::placeholder {
+  color: #5a6785;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+.commandButton,
+.fetchButton {
+  position: relative;
+  overflow: hidden;
+  align-self: center;
+  height: calc(var(--command-h) - 12px);
+  min-height: 48px;
+  min-width: 132px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #4f6cff 0%, #765cff 55%, #a86dff 100%);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow:
+    0 14px 32px rgba(88, 84, 255, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  transition:
+    transform 180ms ease,
+    filter 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    opacity 180ms ease;
+}
+
+.commandButton::after,
+.fetchButton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.42) 50%,
+    transparent 62%
+  );
+  transform: translateX(-120%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.commandButton.isSurfacing::after,
+.fetchButton.fetchButton--busy::after {
+  opacity: 0.35;
+  animation: commandButtonSheen 1.4s ease-in-out infinite;
+}
+
+.commandButton:hover:not(:disabled),
+.fetchButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.07) saturate(1.08);
+  box-shadow:
+    0 16px 36px rgba(88, 84, 255, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+}
+
+.commandButton:active:not(:disabled),
+.fetchButton:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+
+.commandButton:focus-visible,
+.fetchButton:focus-visible {
+  outline: none;
+  box-shadow:
+    0 16px 34px rgba(107, 98, 255, 0.44),
+    0 0 0 4px rgba(142, 167, 255, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+}
+
+.commandButton:disabled,
+.fetchButton:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  transform: none;
+  filter: saturate(0.92) brightness(0.96);
+  box-shadow:
+    0 8px 20px rgba(88, 84, 255, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.commandButton.isSurfacing,
+.fetchButton.fetchButton--busy {
+  opacity: 1;
+  filter: none;
+  cursor: wait;
+  background: linear-gradient(135deg, #5d7cff 0%, #8267ff 55%, #a66bff 100%);
+  box-shadow:
+    0 14px 32px rgba(107, 98, 255, 0.42),
+    0 0 0 6px rgba(142, 167, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+@keyframes commandButtonSheen {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.detectedBlock {
+  margin: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.detectedLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.detectedChips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.detectedChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.heroSuggestions,
+.ifSuggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  max-width: 880px;
+  margin: auto auto 0;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.heroSuggestion,
+.ifSuggestions button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  transition:
+    background 0.16s var(--if-ease),
+    border-color 0.16s var(--if-ease),
+    color 0.16s var(--if-ease),
+    transform 0.16s var(--if-ease);
+}
+
+.heroSuggestion:hover,
+.ifSuggestions button:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.38);
+  transform: translateY(-1px);
+}
+
+.heroSuggestion:focus-visible,
+.ifSuggestions button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(142, 167, 255, 0.28);
+}
+
+.intentPage[data-state="searching"] .heroSuggestions,
+.intentPage[data-state="revealing"] .heroSuggestions,
+.intentPage[data-state="complete"] .heroSuggestions,
+.intentPage[data-state="empty"] .heroSuggestions,
+.intentPage[data-state="error"] .heroSuggestions {
+  display: none;
+}
+
+/* ── Results surface ── */
+
+.resultsSurface {
+  width: min(1120px, calc(100vw - 48px));
+  margin: var(--results-top-gap, 0px) auto 48px;
+  padding-top: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    grid-template-rows var(--motion-duration) var(--motion-ease),
+    opacity calc(var(--motion-duration) * 0.85) var(--motion-ease);
+}
+
+.resultsSurface--active {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+  --results-top-gap: 24px;
+}
+
+.intentPage[data-state="complete"],
+.intentPage[data-state="empty"],
+.intentPage[data-state="error"] {
+  min-height: auto;
+}
+
+.resultsPanel {
+  position: relative;
+  padding-top: 0;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(190, 205, 230, 0.45);
+  border-top: 0;
+  border-radius: 0 0 20px 20px;
+  padding-inline: 4px;
+  padding-bottom: 8px;
+}
+
+.resultsPanel::before {
+  display: none;
+}
+
+.resultsPanel--active::after {
+  display: none;
+}
+
+.resultsSurfaceInner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.ifWorkspace {
+  padding: 0;
+}
+
+.resultsSessionLine {
+  margin: 0 0 16px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: #52627f;
+}
+
+/* ── Discovery result rows ── */
+
+.candidateCard,
+.candidateOpportunity {
+  width: 100%;
+}
+
+.candidateList {
+  display: grid;
+  gap: 0;
+}
+
+.candidateCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: center;
+  min-height: 0;
+  padding: 18px 2px;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(190, 205, 230, 0.42);
+  background: transparent;
+  box-shadow: none;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.candidateCard--best {
+  padding-top: 22px;
+  border-top: 1px solid rgba(190, 205, 230, 0.42);
+  background: linear-gradient(90deg, rgba(124, 92, 255, 0.04) 0%, transparent 42%);
+}
+
+.candidateCard--best::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 22px;
+  bottom: 18px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(124, 92, 255, 0.55), rgba(80, 130, 255, 0.25));
+}
+
+.candidateCard--auction .candidateMarketStatus {
+  color: #9a6b12;
+}
+
+.candidateCard.isRevealed {
+  animation: cardReveal 220ms var(--if-ease) both;
+}
+
+@keyframes cardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.candidateCard:hover {
+  background: rgba(142, 167, 255, 0.05);
+}
+
+.candidateCard--best:hover {
+  background: linear-gradient(90deg, rgba(124, 92, 255, 0.07) 0%, rgba(142, 167, 255, 0.03) 42%);
+}
+
+.candidateCard:active {
+  background: rgba(142, 167, 255, 0.07);
+}
+
+.candidateCard:focus-visible {
+  outline: none;
+  background: rgba(142, 167, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(142, 167, 255, 0.35);
+}
+
+.candidateLeftRail,
+.candidateRightRail {
+  display: grid;
+  gap: 5px;
+  align-content: center;
+  min-width: 0;
+}
+
+.candidateLeftRail {
+  padding-left: 12px;
+}
+
+.candidateCard--best .candidateLeftRail {
+  padding-left: 14px;
+}
+
+.candidateRightRail {
+  justify-items: end;
+  gap: 4px;
+  min-width: 108px;
+}
+
+.candidateCardDomain {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.15;
+  font-weight: 780;
+  letter-spacing: -0.03em;
+  color: #0c152d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidateCard--best .candidateCardDomain {
+  font-size: 20px;
+  font-weight: 820;
+  color: #091229;
+}
+
+.candidateCardReason {
+  font-size: 13px;
+  font-weight: 520;
+  line-height: 1.35;
+  color: #64728e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidateCardPrice {
+  font-size: 14px;
+  font-weight: 720;
+  color: #52627f;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.candidateCardPath {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a96ad;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.candidateCardCta {
+  font-size: 13px;
+  font-weight: 750;
+  color: #526cff;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.candidateCardCta--visible {
+  opacity: 0.72;
+}
+
+.candidateCard:hover .candidateCardCta,
+.candidateCard:focus-visible .candidateCardCta {
+  opacity: 1;
+}
+
+.candidateCard:hover .candidateRightRail .candidateCardPrice,
+.candidateCard:focus-visible .candidateRightRail .candidateCardPrice {
+  color: #17213a;
+}
+
+/* ── Skeleton row-cards ── */
+
+.candidateCard.isSkeleton {
+  pointer-events: none;
+  cursor: default;
+  background: transparent;
+  border-bottom-color: rgba(190, 205, 230, 0.28);
+}
+
+.candidateCard.isSkeleton:hover {
+  background: transparent;
+}
+
+.candidateCard.isSkeleton.candidateCard--best {
+  background: linear-gradient(90deg, rgba(124, 92, 255, 0.03) 0%, transparent 42%);
+}
+
+.skeletonLine {
+  display: block;
+  background: var(--skeleton-base);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.skeletonLine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--skeleton-highlight) 50%,
+    transparent 100%
+  );
+  transform: translateX(-110%);
+  animation: skeletonShimmer 1.6s ease-in-out infinite;
+  opacity: 0.4;
+}
+
+.skeletonLine--label {
+  width: 86px;
+  height: 10px;
+  border-radius: 4px;
+}
+
+.skeletonLine--domain {
+  width: min(240px, 88%);
+  height: 18px;
+  border-radius: 7px;
+}
+
+.skeletonLine--reason {
+  width: min(200px, 72%);
+  height: 13px;
+  border-radius: 6px;
+}
+
+.skeletonLine--status {
+  width: 72px;
+  height: 10px;
+  border-radius: 4px;
+}
+
+.skeletonLine--price {
+  width: 56px;
+  height: 14px;
+}
+
+.skeletonLine--path {
+  width: 52px;
+  height: 11px;
+}
+
+.skeletonLine--fit {
+  width: 44px;
+  height: 14px;
+}
+
+.skeletonLine--cta {
+  width: 72px;
+  height: 12px;
+  border-radius: 5px;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+/* ── Empty / error ── */
+
+.emptyCard {
+  padding: 22px 24px;
+  margin-bottom: 14px;
+  border-radius: 24px;
+  border: 1px solid var(--if-border);
+  background: var(--if-card-bg);
+  box-shadow: 0 14px 40px rgba(20, 35, 90, 0.055);
+}
+
+.emptyCardTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f1933;
+}
+
+.emptyCardBody {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 500;
+  color: #60708f;
+}
+
+.emptyCardActions {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.emptyChip {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(190, 205, 230, 0.75);
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--if-cta);
+  cursor: pointer;
+}
+
+.ifResultsError {
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  color: #b42318;
+  background: #fff5f5;
+  border: 1px solid rgba(180, 35, 24, 0.12);
+}
+
+@keyframes ifHeroEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Laptop 900–1199px ── */
+
+@media (max-width: 1199px) {
+  :root {
+    --page-gutter: 20px;
+    --hero-radius: 28px;
+  }
+
+  .intentPage[data-state="idle"],
+  .intentPage[data-state="typing"] {
+    --hero-shell-h: clamp(420px, 48vh, 480px);
+    --hero-pad-x: 40px;
+    --hero-pad-y: clamp(48px, 5.5vw, 68px);
+    --hero-pad-top: clamp(48px, 5.5vw, 68px);
+    --hero-pad-bottom: clamp(56px, 6.5vw, 76px);
+  }
+
+  .intentPage[data-state="idle"] .hero-card,
+  .intentPage[data-state="typing"] .hero-card {
+    min-height: clamp(420px, 48vh, 480px);
+  }
+}
+
+/* ── Tablet 640–899px ── */
+
+@media (max-width: 899px) {
+  :root {
+    --page-gutter: 16px;
+    --hero-radius: 28px;
+  }
+
+  .intentPage[data-state="idle"],
+  .intentPage[data-state="typing"] {
+    --hero-shell-h: clamp(400px, 46vh, 440px);
+    --hero-pad-x: 28px;
+    --hero-pad-y: clamp(44px, 5vw, 60px);
+    --hero-pad-top: clamp(44px, 5vw, 60px);
+    --hero-pad-bottom: clamp(52px, 6vw, 72px);
+  }
+
+  .intentPage[data-state="idle"] .hero-card,
+  .intentPage[data-state="typing"] .hero-card {
+    min-height: clamp(400px, 46vh, 440px);
+  }
+
+  .intentPage[data-state="searching"],
+  .intentPage[data-state="revealing"],
+  .intentPage[data-state="complete"],
+  .intentPage[data-state="empty"],
+  .intentPage[data-state="error"] {
+    --hero-shell-h: 220px;
+    --hero-pad-x: 24px;
+    --hero-pad-y: 28px;
+  }
+}
+
+/* ── Mobile ≤640px ── */
+
+@media (max-width: 640px) {
+  .intentPage[data-state="idle"],
+  .intentPage[data-state="typing"] {
+    --hero-shell-h: auto;
+    --hero-pad-x: 22px;
+    --hero-pad-y: 28px;
+  }
+
+  .intentPage[data-state="complete"],
+  .intentPage[data-state="searching"],
+  .intentPage[data-state="revealing"],
+  .intentPage[data-state="empty"],
+  .intentPage[data-state="error"] {
+    --hero-shell-h: 190px;
+    --hero-pad-x: 18px;
+    --hero-pad-y: 24px;
+  }
+
+  .intentHero {
+    min-height: var(--hero-shell-h);
+  }
+
+  .commandShell,
+  .inputShell {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .commandButton,
+  .fetchButton {
+    height: 52px;
+    width: 100%;
+  }
+
+  .heroHeadline {
+    font-size: clamp(28px, 8vw, 38px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  .ifHeroWrap,
+  .hero-wrap,
+  .heroGlow,
+  .intentHero,
+  .heroVisual,
+  .heroContent,
+  .intentHeroContent,
+  .heroPromo,
+  .commandShell,
+  .resultsSurface {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+    will-change: auto !important;
+  }
+
+  .commandButton::after,
+  .fetchButton::after {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+
+  .candidateOpportunity.isRevealed,
+  .revealCard {
+    opacity: 1;
+    transform: none;
+  }
+
+  .skeletonLine::after {
+    animation: none;
+  }
+}
+
+/* ── Intent Fetch result card scope (wins over flat row / detail styles) ── */
+
+.intentPage[data-state="idle"] .commandButton,
+.intentPage[data-state="typing"] .commandButton,
+.intentPage[data-state="idle"] .fetchButton,
+.intentPage[data-state="typing"] .fetchButton {
+  height: calc(var(--command-h) - 16px);
+  border-radius: 15px;
+}
+
+.intentPage .resultsSurface {
+  width: min(1240px, calc(100vw - 220px)) !important;
+  margin: var(--results-top-gap, 28px) auto 48px !important;
+  display: grid !important;
+  gap: 16px !important;
+}
+
+.intentPage .candidateList {
+  display: grid !important;
+  gap: 16px !important;
+}
+
+.intentPage .candidateOpportunity {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 132px !important;
+  align-items: center !important;
+  gap: 24px !important;
+  min-height: 104px !important;
+  padding: 18px 22px !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(190, 205, 230, 0.68) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%) !important;
+  box-shadow: 0 2px 8px rgba(20, 35, 90, 0.04) !important;
+  text-decoration: none !important;
+  color: inherit !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  isolation: isolate;
+}
+
+.intentPage .candidateOpportunity.isBest {
+  min-height: 116px !important;
+  border-color: rgba(115, 140, 255, 0.58) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(115, 140, 255, 0.08), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #fbfcff 100%) !important;
+  box-shadow: 0 4px 14px rgba(70, 95, 180, 0.07) !important;
+}
+
+.intentPage .candidateOpportunity::before,
+.intentPage .candidateOpportunity::after {
+  display: none !important;
+}
+
+.intentPage .candidateLeft {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0 !important;
+}
+
+.intentPage .candidateRight {
+  display: grid !important;
+  justify-items: end !important;
+  gap: 4px !important;
+  text-align: right !important;
+}
+
+.intentPage .bestLabel {
+  display: block !important;
+  margin: 0 0 6px !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.14em !important;
+  font-weight: 900 !important;
+  color: #526cff !important;
+  text-transform: uppercase !important;
+}
+
+.intentPage .candidateDomain {
+  margin: 0 !important;
+  font-size: 18px !important;
+  line-height: 1.12 !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.03em !important;
+  color: #0c152d !important;
+}
+
+.intentPage .candidateReason {
+  margin: 5px 0 0 !important;
+  font-size: 13.5px !important;
+  font-weight: 560 !important;
+  color: #5d6b86 !important;
+}
+
+.intentPage .candidateStatus {
+  margin: 7px 0 0 !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.13em !important;
+  font-weight: 900 !important;
+  color: #315eff !important;
+  text-transform: uppercase !important;
+}
+
+.intentPage .candidatePrice {
+  font-size: 14px !important;
+  font-weight: 850 !important;
+  color: #1c2742 !important;
+}
+
+.intentPage .candidatePath {
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  color: #6c7892 !important;
+}
+
+.intentPage .candidateReview {
+  margin-top: 6px !important;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+  color: #5572ff !important;
+  opacity: 0.28 !important;
+}
+
+.intentPage .candidateOpportunity.isBest .candidateReview,
+.intentPage .candidateOpportunity:hover .candidateReview,
+.intentPage .candidateOpportunity:focus-visible .candidateReview {
+  opacity: 1 !important;
+}
+
+.intentPage .candidateOpportunity:hover,
+.intentPage .candidateOpportunity:focus-visible {
+  transform: translateY(-1px) !important;
+  border-color: rgba(115, 140, 255, 0.48) !important;
+  box-shadow: 0 6px 18px rgba(20, 35, 90, 0.07) !important;
+}
+
+.intentPage .resultsCount {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 auto 4px !important;
+  text-align: center !important;
+  font-size: 13px !important;
+  font-weight: 720 !important;
+  color: #64728e !important;
+}
+
+.intentPage .candidateOpportunity.isSkeleton {
+  min-height: 104px !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(190, 205, 230, 0.6) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%) !important;
+  box-shadow: 0 12px 34px rgba(20, 35, 90, 0.045) !important;
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+.intentPage .candidateOpportunity.isSkeleton.isBest {
+  min-height: 116px !important;
+}
+
+.intentPage .candidateOpportunity.isSkeleton:hover {
+  transform: none !important;
+  border-color: rgba(190, 205, 230, 0.6) !important;
+  box-shadow: 0 2px 8px rgba(20, 35, 90, 0.04) !important;
+}
+
+.intentPage .candidateOpportunity.isRevealed {
+  animation: cardReveal 220ms var(--if-ease) both;
+}
+
+/* Hard lock — brand + hero composition (see banner above) */
+body.intent-fetch-page #intent-fetch-root main.page.intentPage > section.hero-wrap {
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--logo-hero-gap);
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="idle"] > section.hero-wrap,
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="typing"] > section.hero-wrap {
+  min-height: 100vh;
+  justify-content: flex-start;
+  padding-top: clamp(40px, 10vh, 88px);
+}
+
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="searching"] > section.hero-wrap,
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="revealing"] > section.hero-wrap,
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="complete"] > section.hero-wrap,
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="empty"] > section.hero-wrap,
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="error"] > section.hero-wrap {
+  min-height: auto;
+  justify-content: flex-start;
+  padding-top: 28px;
+}
+
+body.intent-fetch-page #intent-fetch-root main.page.intentPage > section.hero-wrap > header.site-header {
+  position: relative;
+  width: 100vw;
+  height: auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+body.intent-fetch-page #intent-fetch-root main.page.intentPage > section.hero-wrap > header.site-header a.site-logo {
+  display: block;
+  width: var(--logo-width-idle);
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  position: static;
+  transform: none;
+  pointer-events: auto;
+}
+
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="searching"] > section.hero-wrap > header.site-header a.site-logo,
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="revealing"] > section.hero-wrap > header.site-header a.site-logo,
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="complete"] > section.hero-wrap > header.site-header a.site-logo,
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="empty"] > section.hero-wrap > header.site-header a.site-logo,
+body.intent-fetch-page #intent-fetch-root main.page.intentPage[data-state="error"] > section.hero-wrap > header.site-header a.site-logo {
+  width: var(--logo-width-compact);
+}
+
+body.intent-fetch-page #intent-fetch-root main.page.intentPage > section.hero-wrap > .hero-card {
+  width: min(1240px, calc(100vw - 220px));
+  margin: 0 auto;
+  transform: none;
+  position: relative;
+}

@@ -23,9 +23,56 @@ A Decision Candidate is inventory enriched with:
 ## Public discovery surfaces
 
 - Candidate pages: `/domains/:slug`
-- JSON feed: `/api/domain-feed.json`
-- NDJSON feed: `/api/domain-feed.ndjson`
-- Sitemap: `/sitemap.xml`
+- Product graph JSON: `/api/domains/:slug/graph.json`
+- Public listing feed (NDJSON): `/api/domain-listings.ndjson` — default `scope=indexed` (index-now / sitemap-aligned); supports `scope=active|archive`
+- Public listing feed (JSON): `/api/domain-listings.json` — same records as NDJSON, default `limit=1000`
+- Full durable catalog feed (NDJSON): `/api/domain-feed.ndjson` — internal/full machine feed with graph payloads for all durable records
+- Full durable catalog feed (JSON): `/api/domain-feed.json` — internal catalog JSON, default `limit=1000`
+
+## Sitemaps and SEO tiers (verified implementation)
+
+Submit only `/sitemap.xml` to search engines. It is a sitemap index, not a flat URL list.
+
+Sitemap index children (source: `server/sitemap.js`):
+
+- `/sitemap-core.xml` — static/indexable core pages (`/`, `/experiments/intent-fetch/`, `/methodology/`, `/experiments/auction-radar/` when present)
+- `/sitemap-intents.xml` — published intent pages from `published-intents.json` only (no query URLs)
+- `/sitemap-domains-indexed.xml` — **only** `index-now` tier domain product pages
+
+Not implemented yet:
+
+- `/sitemap-domains-archive.xml` — optional future archive discovery; sold/ended/unavailable pages stay out of sitemap for now
+
+`/robots.txt` points to `/sitemap.xml` only.
+
+### SEO tier model (source: `server/candidate-store/seo-tier.js`)
+
+Every NameSilo auction durable record gets a full product page at `/domains/{slug}`. Tier controls indexing exposure, not page existence.
+
+| Tier | Robots | In domain sitemap | Notes |
+|------|--------|-------------------|-------|
+| `index-now` | `index,follow` | yes | Product + Offer JSON-LD, graph linked, bare canonical |
+| `hold-noindex` | `noindex,follow` | no | Default for new ingests; eligible for batch promotion |
+| `archive` | `noindex` | no | Ended, sold, or unavailable auctions |
+
+Sitemap inclusion filter (`listSitemapCandidates`): lifecycle active, `index-now` tier, fresh `statusExpiresAt`, passes full `validateIndexNowEligibility`, bare canonical (no `?`), product graph + Product/Offer schema complete.
+
+Domain sitemap `lastmod` order: `statusVerifiedAt`, then `updatedAt`, `publishedAt`, `createdAt` (ISO 8601).
+
+Promotion gate (`validateIndexNowEligibility`): active auction, fresh `statusExpiresAt`, valid canonical and NameSilo acquisition URL, quality score ≥ 55, no gibberish/spam/excessive-length flags, Product + Offer schema complete, category/use-case signals present.
+
+### Rollout tooling
+
+- Audit: `node scripts/audit-indexing-candidates.js`
+- Verify strategy: `node scripts/verify-sitemap-strategy.js`
+- Batch promote: `node scripts/promote-index-tier.js --limit=500 --dry-run` then without `--dry-run`
+- Refresh auction status before promotion: `node scripts/ingest-namesilo-auctions.js --write --start-page=1 --end-page=125`
+
+Expand index tier in batches (500 → 2,000 → 5,000 → 10,000) only after GSC crawl/index signals look healthy. Do not index all durable records at once.
+
+### Current batch state (verify live)
+
+Run `node scripts/verify-sitemap-strategy.js` for current counts. Frozen QA manifest: `data/reports/index-batch-500-manifest-2026-06-12T19-29-50-048Z.json`.
 
 ## Persistent APIs
 

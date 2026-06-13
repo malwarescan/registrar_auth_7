@@ -5,10 +5,25 @@
   "description": "Snatch.auction domain fetch platform",
   "type": "commonjs",
   "scripts": {
+    "prestart": "npm run build:intent-fetch",
     "start": "node server.js",
-    "test": "node --test tests/domain-fetch-waterfall.test.js"
+    "build": "npm run build:intent-fetch",
+    "test": "node --test tests/domain-fetch-waterfall.test.js tests/intent-session.test.js tests/seo-phase-a.test.js tests/intent-fetch-layout-lock.test.js tests/detail-page-layout-lock.test.js tests/intent-fetch-signals.test.mjs tests/candidate-detail-page.test.js tests/durable-candidate-store.test.js tests/product-record-architecture.test.js tests/renderer-split.test.js tests/ingest-readiness.test.js tests/product-page-lifecycle.test.js tests/sitemap-categorized.test.js tests/seo-tier.test.js tests/production-sitemap-hardening.test.js tests/domain-listings-feed.test.js",
+    "build:intent-fetch": "esbuild src/intent-fetch-entry.jsx --bundle --platform=browser --format=iife --jsx=automatic --outfile=assets/intent-fetch-react.js"
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^9.6.1",
+    "@react-three/postprocessing": "^3.0.4",
+    "ogl": "^1.0.11",
+    "postprocessing": "^6.39.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
   }
 }

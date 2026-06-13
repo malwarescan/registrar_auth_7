@@ -1,9 +1,25 @@
 function tokenize(input) {
+  const stopwords = new Set([
+    "the",
+    "a",
+    "an",
+    "in",
+    "for",
+    "to",
+    "of",
+    "and",
+    "or",
+    "with",
+    "on",
+    "at",
+    "by",
+    "from",
+  ]);
   return String(input || "")
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, " ")
     .split(/\s+/)
-    .filter(Boolean);
+    .filter((token) => token && !stopwords.has(token));
 }
 
 function inferPreferredTlds(intentFlags, constraints) {
@@ -19,6 +35,7 @@ function inferPreferredTlds(intentFlags, constraints) {
 
 function parseLocation(tokens) {
   if (tokens.includes("brooklyn")) return "Brooklyn, New York";
+  if (tokens.includes("chicago")) return "Chicago, Illinois";
   if (tokens.includes("orange") && tokens.includes("county")) return "Orange County";
   if (tokens.includes("florida")) return "Florida, United States";
   if (tokens.includes("nyc")) return "New York City, New York";
@@ -28,7 +45,24 @@ function parseLocation(tokens) {
 
 function interpretBrief(brief, constraints = {}) {
   const tokens = tokenize(brief);
-  const isLocalFood = tokens.some((t) => ["pizza", "slice", "delivery", "restaurant"].includes(t));
+  const foodTerms = new Set([
+    "pizza",
+    "slice",
+    "delivery",
+    "restaurant",
+    "pasta",
+    "italian",
+    "burger",
+    "taco",
+    "ramen",
+    "sushi",
+    "deli",
+    "kitchen",
+    "food",
+    "eatery",
+    "cafe",
+  ]);
+  const isLocalFood = tokens.some((t) => foodTerms.has(t));
   const isCyber = tokens.some((t) => ["cyber", "security", "threat", "breach", "defense"].includes(t));
   const isAi = tokens.some((t) => ["ai", "agent", "assistant", "automation", "copilot"].includes(t));
   const isLuxury = tokens.some((t) => ["emerald", "jewelry", "jewellery", "luxury", "gem", "muzo"].includes(t));
@@ -53,12 +87,17 @@ function interpretBrief(brief, constraints = {}) {
     requiredConcepts = ["dentist", "dental", "clinic", "smile", "orangecounty", "oc"];
     adjacentConcepts = ["care", "family", "tooth", "teeth", "oral", "local", "book"];
   } else if (isLocalFood) {
+    const discoveredFoodTerms = tokens.filter((term) => foodTerms.has(term));
+    const locationTerms = [];
+    if (tokens.includes("brooklyn")) locationTerms.push("brooklyn", "bk");
+    if (tokens.includes("chicago")) locationTerms.push("chicago", "chi");
+    if (tokens.includes("nyc")) locationTerms.push("nyc", "newyork");
     businessType = "local pizza delivery";
     productCategory = "Food delivery";
     targetBuyer = ["local delivery customers", "neighborhood residents", "restaurant customers"];
     desiredTone = ["local", "fast", "appetizing", "trustworthy", "memorable"];
-    requiredConcepts = ["pizza", "slice", "pie", "delivery", "local", "brooklyn", "bk"];
-    adjacentConcepts = ["oven", "crust", "door", "now", "fast", "neighborhood"];
+    requiredConcepts = [...discoveredFoodTerms, "delivery", "local", ...locationTerms].filter(Boolean);
+    adjacentConcepts = ["kitchen", "fresh", "order", "now", "fast", "neighborhood", "oven", "table"];
   } else if (isLuxury) {
     businessType = "luxury jewelry brand";
     productCategory = "Luxury jewelry";
@@ -74,11 +113,13 @@ function interpretBrief(brief, constraints = {}) {
     requiredConcepts = ["cyber", "security", "threat", "defense", "monitor"];
     adjacentConcepts = ["watch", "shield", "intel", "radar", "secure"];
   } else if (isAi) {
+    const aiCore = ["ai", "agent", "assistant", "automation", "copilot"];
+    const specificIntent = tokens.filter((token) => !aiCore.includes(token) && token.length >= 3).slice(0, 4);
     businessType = "ai software";
-    productCategory = "AI product";
+    productCategory = "AI software";
     targetBuyer = ["operations teams", "small business owners", "automation buyers"];
     desiredTone = ["modern", "practical", "professional", "trustworthy"];
-    requiredConcepts = ["ai", "agent", "assistant", "automation", "desk"];
+    requiredConcepts = [...specificIntent, ...aiCore, "desk"];
     adjacentConcepts = ["copilot", "ops", "workflow", "smart", "voice"];
   } else if (isLocalService) {
     businessType = "local service business";

@@ -9,10 +9,11 @@ const {
 } = require("./seo-tier");
 const { resolveLifecycleState } = require("./product-lifecycle");
 const { isFreshRecord, passesQualityThreshold } = require("./promotion-audit");
+const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
 function auditIndexingCandidates(records, options = {}) {
   const now = options.now ?? Date.now();
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const rejectionReasons = {};
   const eligibleCandidates = [];
   const topCandidates = [];

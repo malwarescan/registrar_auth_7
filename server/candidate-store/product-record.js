@@ -9,7 +9,8 @@ function defaultSeoTierForRecord(existing) {
   return SEO_TIER.HOLD_NOINDEX;
 }
 
-const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || "https://snatch.auction";
+const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || DEFAULT_PUBLIC_BASE_URL;
 const STATUS_TTL_MS = 15 * 60 * 1000;
 
 function resolveAuctionStatus(auctionEndsAt, now = Date.now()) {

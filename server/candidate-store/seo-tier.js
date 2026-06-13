@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
 function resolveLifecycleState(record) {
   return require("./product-lifecycle").resolveLifecycleState(record);
@@ -105,7 +106,7 @@ function applySeoTier(record, tier, options = {}) {
 }
 
 function validateIndexNowEligibility(record, now = Date.now(), options = {}) {
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   if (!record) return "Candidate not found";
   if (!record.domain) return "Missing domain";
   if (!record.canonicalUrl || record.canonicalUrl.includes("?")) return "Invalid canonical URL";

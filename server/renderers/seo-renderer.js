@@ -1,5 +1,6 @@
 const { buildDomainProductGraph } = require("../candidate-store/domain-graph");
 const { normalizePageMode } = require("../candidate-store/product-lifecycle");
+const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
 const ROBOTS_SUFFIX = "max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
@@ -26,7 +27,7 @@ function buildSeoDescription(record, mode) {
 }
 
 function buildCanonicalUrl(record, mode, options = {}) {
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   return record.canonicalUrl || `${metadataBaseUrl}/domains/${record.slug}`;
 }
 
@@ -45,7 +46,7 @@ function isInactiveSeoMode(mode) {
 }
 
 function buildSeoJsonLd(record, mode, options = {}) {
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const graphPayload = buildDomainProductGraph(record, metadataBaseUrl);
   if (!graphPayload?.["@graph"]) {
     return { "@context": "https://schema.org", "@graph": [] };

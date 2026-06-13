@@ -23,12 +23,12 @@ test("sitemap excludes volatile session candidate slugs", () => {
 
 test("robots and sitemap use PUBLIC_BASE_URL when configured", () => {
   const previous = process.env.PUBLIC_BASE_URL;
-  process.env.PUBLIC_BASE_URL = "https://snatch.auction";
+  process.env.PUBLIC_BASE_URL = "https://urlsnatcher.com";
   try {
-    assert.equal(getPublicBaseUrl(), "https://snatch.auction");
-    assert.match(buildRobotsTxt(), /Sitemap: https:\/\/snatch\.auction\/sitemap\.xml/);
+    assert.equal(getPublicBaseUrl(), "https://urlsnatcher.com");
+    assert.match(buildRobotsTxt(), /Sitemap: https:\/\/urlsnatcher\.com\/sitemap\.xml/);
     assert.match(buildSitemapIndex(), /sitemap-core\.xml/);
-    assert.match(buildCoreSitemap(), /<loc>https:\/\/snatch\.auction\/methodology\/<\/loc>/);
+    assert.match(buildCoreSitemap(), /<loc>https:\/\/urlsnatcher\.com\/methodology\/<\/loc>/);
     assert.doesNotMatch(buildCoreSitemap(), /localhost/);
   } finally {
     if (previous === undefined) delete process.env.PUBLIC_BASE_URL;
@@ -41,8 +41,8 @@ test("toPublicMetadataUrl never uses localhost without explicit opt-in", () => {
   delete process.env.PUBLIC_BASE_URL;
   process.env.NODE_ENV = "development";
   try {
-    assert.equal(toPublicMetadataUrl("/domain-assets/test.png", { port: 4173, isProduction: false }), "https://snatch.auction/domain-assets/test.png");
-    assert.equal(getMetadataBaseUrl({ port: 4173, isProduction: false }), "https://snatch.auction");
+    assert.equal(toPublicMetadataUrl("/domain-assets/test.png", { port: 4173, isProduction: false }), "https://urlsnatcher.com/domain-assets/test.png");
+    assert.equal(getMetadataBaseUrl({ port: 4173, isProduction: false }), "https://urlsnatcher.com");
   } finally {
     if (previousPublicBase === undefined) delete process.env.PUBLIC_BASE_URL;
     else process.env.PUBLIC_BASE_URL = previousPublicBase;

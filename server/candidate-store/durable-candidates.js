@@ -8,6 +8,7 @@ const {
 const { validatePromotionGate, isGraphComplete } = require("./promotion-gate");
 const { resolveLifecycleState } = require("./product-lifecycle");
 const { applySeoTier, isIndexNowTier, SEO_TIER, validateIndexNowEligibility, isProductOfferSchemaComplete } = require("./seo-tier");
+const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -138,7 +139,7 @@ function countDurableCandidates() {
 }
 
 function listSitemapCandidates(options = {}) {
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const now = options.now ?? Date.now();
   return listDurableCandidates().filter((record) => {
     if (!record?.slug || !record.domain) return false;
@@ -204,7 +205,7 @@ function promoteToIndexNow(slug, options = {}) {
 function batchPromoteIndexTier(options = {}) {
   const limit = Number.isFinite(options.limit) ? options.limit : 500;
   const now = options.now ?? Date.now();
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const dryRun = options.dryRun === true;
 
   const candidates = listDurableCandidates()

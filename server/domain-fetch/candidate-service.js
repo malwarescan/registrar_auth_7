@@ -16,6 +16,7 @@ const {
   attachIntentSessionResults,
 } = require("./intent-session");
 const { logDemandSignalFromFetch } = require("../demand-signals");
+const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
 const workspaces = new Map();
 const candidatesById = new Map();
@@ -23,7 +24,7 @@ const shortlistBySession = new Map();
 const watchlistBySession = new Map();
 // Session-only inventory from the latest Intent Fetch runs. Not SEO/public catalog.
 let sessionCandidates = [];
-const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || "https://snatch.auction";
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || DEFAULT_PUBLIC_BASE_URL;
 
 function toPublicSourceLabel(source) {
   if (source === "namesilo-auction") return "Live NameSilo Auction";

@@ -156,7 +156,7 @@ test("overlay on indexable durable page stays noindex with bare canonical", () =
       isProduction: false,
     });
     assert.match(html, /meta name="robots" content="noindex,follow/);
-    assert.match(html, /link rel="canonical" href="https:\/\/snatch\.auction\/domains\/overlayme-com"/);
+    assert.match(html, /link rel="canonical" href="https:\/\/urlsnatcher\.com\/domains\/overlayme-com"/);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -212,7 +212,7 @@ test("dev map record resolves when bulk file missing", () => {
       auctionEndsAt: new Date(Date.now() + 86400000).toISOString(),
       statusVerifiedAt: new Date().toISOString(),
       statusExpiresAt: new Date(Date.now() + 3600000).toISOString(),
-      canonicalUrl: "https://snatch.auction/domains/devonly-com",
+      canonicalUrl: "https://urlsnatcher.com/domains/devonly-com",
       acquisitionPath: {
         type: "auction",
         provider: "NameSilo",
@@ -223,7 +223,7 @@ test("dev map record resolves when bulk file missing", () => {
       baseScores: { overall: 70, brandability: 70, tldTrust: 90 },
       categoryGuesses: ["software"],
       buyerUseCases: ["startup"],
-      graphId: "https://snatch.auction/domains/devonly-com#graph",
+      graphId: "https://urlsnatcher.com/domains/devonly-com#graph",
       candidateId: "product_devonly-com",
       published: false,
       indexable: false,

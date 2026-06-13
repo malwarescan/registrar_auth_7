@@ -181,7 +181,7 @@ test("batchPromoteIndexTier promotes top eligible records up to limit", () => {
 });
 
 test("applySeoTier sets consistent indexable flags", () => {
-  const base = { slug: "x-com", domain: "x.com", canonicalUrl: "https://snatch.auction/domains/x-com" };
+  const base = { slug: "x-com", domain: "x.com", canonicalUrl: "https://urlsnatcher.com/domains/x-com" };
   const indexed = applySeoTier(base, SEO_TIER.INDEX_NOW);
   assert.equal(indexed.seoTier, SEO_TIER.INDEX_NOW);
   assert.equal(indexed.indexable, true);

@@ -123,14 +123,14 @@ test("buildCandidateJsonLd canonicalMode delegates to SEO renderer graph", () =>
   const jsonLd = buildCandidateJsonLd(
     candidate,
     record.canonicalUrl,
-    "https://snatch.auction/domain-assets/anudesk-com.png",
+    "https://urlsnatcher.com/domain-assets/anudesk-com.png",
     false,
     [],
-    { canonicalMode: true, record, indexable: true, metadataBaseUrl: "https://snatch.auction" }
+    { canonicalMode: true, record, indexable: true, metadataBaseUrl: "https://urlsnatcher.com" }
   );
   const direct = buildSeoJsonLd(record, "canonical", {
-    metadataBaseUrl: "https://snatch.auction",
-    ogImage: "https://snatch.auction/domain-assets/anudesk-com.png",
+    metadataBaseUrl: "https://urlsnatcher.com",
+    ogImage: "https://urlsnatcher.com/domain-assets/anudesk-com.png",
   });
   assert.deepEqual(jsonLd["@graph"].map((node) => node["@type"]).sort(), direct["@graph"].map((node) => node["@type"]).sort());
 });
@@ -185,7 +185,7 @@ test("canonical promoted page still index/follow and overlay page noindex with b
       isProduction: false,
     });
     assert.match(html, /meta name="robots" content="noindex,follow/);
-    assert.match(html, /link rel="canonical" href="https:\/\/snatch\.auction\/domains\/anudesk-com"/);
+    assert.match(html, /link rel="canonical" href="https:\/\/urlsnatcher\.com\/domains\/anudesk-com"/);
     assert.match(html, /<title>anudesk\.com — \.com Auction Domain \| Snatch\.auction<\/title>/);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });

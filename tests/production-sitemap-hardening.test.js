@@ -130,7 +130,7 @@ test("promoted page canonicalizes to bare slug without query params", () => {
       port: 4173,
       isProduction: false,
     });
-    assert.match(html, /link rel="canonical" href="https:\/\/snatch\.auction\/domains\/canonical-com"/);
+    assert.match(html, /link rel="canonical" href="https:\/\/urlsnatcher\.com\/domains\/canonical-com"/);
     assert.doesNotMatch(html, /canonical" href="[^"]*\?/);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
@@ -158,7 +158,7 @@ test("overlay page is noindex with bare canonical and unchanged product title", 
       isProduction: false,
     });
     assert.match(html, /meta name="robots" content="noindex,follow/);
-    assert.match(html, /link rel="canonical" href="https:\/\/snatch\.auction\/domains\/overlay-com"/);
+    assert.match(html, /link rel="canonical" href="https:\/\/urlsnatcher\.com\/domains\/overlay-com"/);
     assert.doesNotMatch(html, /intent_id/);
     assert.equal(listSitemapCandidates().some((r) => r.slug === "overlay-com"), true);
   } finally {

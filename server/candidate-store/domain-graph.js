@@ -1,5 +1,6 @@
 const { buildGraphId } = require("./product-record");
 const { resolveLifecycleState } = require("./product-lifecycle");
+const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
 function recordIsIndexNow(record) {
   if (!record?.domain) return false;
@@ -9,7 +10,7 @@ function recordIsIndexNow(record) {
   return record.indexable === true;
 }
 
-function buildDomainProductGraph(record, metadataBaseUrl = "https://snatch.auction") {
+function buildDomainProductGraph(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
   if (!record) return null;
 
   const canonicalUrl = record.canonicalUrl || `${metadataBaseUrl}/domains/${record.slug}`;

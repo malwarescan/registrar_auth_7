@@ -1,12 +1,13 @@
 const { resolveLifecycleState, resolveProductPageMode } = require("../candidate-store/product-lifecycle");
 const { resolveSeoTier } = require("../candidate-store/seo-tier");
 const { buildRobots } = require("./seo-renderer");
+const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
 function resolveAcquisitionUrl(record = {}) {
   return record.acquisitionPath?.actionUrl || record.acquisitionPath?.url || record.auctionUrl || null;
 }
 
-function renderDomainListing(record, metadataBaseUrl = "https://snatch.auction") {
+function renderDomainListing(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
   if (!record?.slug || !record.domain) return null;
 
   const canonicalUrl = record.canonicalUrl || `${metadataBaseUrl}/domains/${record.slug}`;
@@ -47,13 +48,13 @@ function renderDomainListing(record, metadataBaseUrl = "https://snatch.auction")
   };
 }
 
-function renderDomainListingsNdjson(records, metadataBaseUrl = "https://snatch.auction") {
+function renderDomainListingsNdjson(records, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
   return records
     .map((record) => renderDomainListing(record, metadataBaseUrl))
     .filter(Boolean);
 }
 
-function renderDomainListingsJson(records, metadataBaseUrl = "https://snatch.auction", meta = {}) {
+function renderDomainListingsJson(records, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL, meta = {}) {
   const listings = renderDomainListingsNdjson(records, metadataBaseUrl);
   return {
     scope: meta.scope || "indexed",

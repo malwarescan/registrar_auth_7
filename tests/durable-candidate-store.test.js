@@ -43,7 +43,7 @@ function sampleAuctionCandidate(overrides = {}) {
     eligibleDecisionCandidate: true,
     statusVerifiedAt: new Date().toISOString(),
     statusExpiresAt: future,
-    canonicalUrl: "https://snatch.auction/domains/anudesk-com",
+    canonicalUrl: "https://urlsnatcher.com/domains/anudesk-com",
     tld: ".com",
     matchedTerms: ["desk", "support"],
     scores: {
@@ -225,7 +225,7 @@ test("overlay page is noindex and canonicalizes to bare slug", () => {
     isProduction: false,
   });
   assert.match(html, /meta name="robots" content="noindex,follow/);
-  assert.match(html, /link rel="canonical" href="https:\/\/snatch\.auction\/domains\/anudesk-com"/);
+  assert.match(html, /link rel="canonical" href="https:\/\/urlsnatcher\.com\/domains\/anudesk-com"/);
   assert.match(html, /Recommended for AI Receptionist · #1 · 76 fit/);
   assert.match(html, /<title>anudesk\.com — \.com Auction Domain \| Snatch\.auction<\/title>/);
   assert.match(html, /AI Receptionist domain candidate in AI Software/);

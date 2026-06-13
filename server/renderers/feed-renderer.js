@@ -1,10 +1,11 @@
 const { buildDomainProductGraph } = require("../candidate-store/domain-graph");
+const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
-function renderDomainFeedNdjson(records, metadataBaseUrl = "https://snatch.auction") {
+function renderDomainFeedNdjson(records, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
   return records.map((record) => buildDomainProductGraph(record, metadataBaseUrl));
 }
 
-function renderDomainFeedJson(records, metadataBaseUrl = "https://snatch.auction") {
+function renderDomainFeedJson(records, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
   const graphs = renderDomainFeedNdjson(records, metadataBaseUrl);
   return {
     count: graphs.length,
@@ -12,7 +13,7 @@ function renderDomainFeedJson(records, metadataBaseUrl = "https://snatch.auction
   };
 }
 
-function renderDatasetMetadata(records, metadataBaseUrl = "https://snatch.auction") {
+function renderDatasetMetadata(records, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
   return {
     "@context": "https://schema.org",
     "@type": "Dataset",

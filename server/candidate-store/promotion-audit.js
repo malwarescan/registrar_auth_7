@@ -1,6 +1,7 @@
 const { validatePromotionGate, MIN_OVERALL_SCORE, isGraphComplete } = require("./promotion-gate");
 
 const BLOCKING_QUALITY_FLAGS = new Set(["gibberish", "excessive-length"]);
+const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
 function isFreshRecord(record, now = Date.now()) {
   const expiresAt = record?.statusExpiresAt ? new Date(record.statusExpiresAt).getTime() : 0;
@@ -15,7 +16,7 @@ function passesQualityThreshold(record) {
 
 function auditPromotionCandidates(records, options = {}) {
   const now = options.now ?? Date.now();
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const rejectionReasons = {};
   const eligibleSlugs = [];
 

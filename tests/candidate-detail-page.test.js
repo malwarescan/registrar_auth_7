@@ -254,7 +254,7 @@ test("noindex pages still emit Product and Offer JSON-LD graph", () => {
     toPublicMetadataUrl("/domain-assets/anudesk-com.png"),
     false,
     [],
-    { indexable: false, metadataBaseUrl: "https://snatch.auction", intentRecord }
+    { indexable: false, metadataBaseUrl: "https://urlsnatcher.com", intentRecord }
   );
   const serialized = JSON.stringify(jsonLd);
   assert.match(serialized, /"@type":"WebPage"/);

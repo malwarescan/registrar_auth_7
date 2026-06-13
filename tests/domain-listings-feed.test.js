@@ -107,7 +107,7 @@ test("listings NDJSON default returns indexed records only", () => {
     seedScopeFixtures();
     const sink = collectNdjson({});
     handleDomainListingsNdjson({}, sink.res, {
-      metadataBaseUrl: "https://snatch.auction",
+      metadataBaseUrl: "https://urlsnatcher.com",
       query: {},
     });
     const lines = sink.parse();
@@ -147,7 +147,7 @@ test("listing feed excludes overlays and query URLs", () => {
     seedScopeFixtures();
     const sink = collectNdjson({});
     handleDomainListingsNdjson({}, sink.res, {
-      metadataBaseUrl: "https://snatch.auction",
+      metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "active" },
     });
     for (const listing of sink.parse()) {
@@ -166,10 +166,10 @@ test("listing feed record has canonical URL and graph URL", () => {
   try {
     seedFreshRecord("listingshape.com");
     promoteCandidate("listingshape-com");
-    const listing = renderDomainListing(getDurableCandidateBySlug("listingshape-com"), "https://snatch.auction");
+    const listing = renderDomainListing(getDurableCandidateBySlug("listingshape-com"), "https://urlsnatcher.com");
     assert.equal(listing.type, "DomainListing");
-    assert.equal(listing.canonicalUrl, "https://snatch.auction/domains/listingshape-com");
-    assert.equal(listing.graphUrl, "https://snatch.auction/api/domains/listingshape-com/graph.json");
+    assert.equal(listing.canonicalUrl, "https://urlsnatcher.com/domains/listingshape-com");
+    assert.equal(listing.graphUrl, "https://urlsnatcher.com/api/domains/listingshape-com/graph.json");
     assert.match(listing.robots, /^index,follow/);
     assert.equal(typeof listing.auction.url, "string");
     assert.ok(Array.isArray(listing.categoryGuesses));
@@ -193,7 +193,7 @@ test("JSON listings defaults to limit 1000", () => {
       },
     };
     handleDomainListingsJson({}, res, {
-      metadataBaseUrl: "https://snatch.auction",
+      metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "indexed" },
       isProduction: true,
     });
@@ -222,7 +222,7 @@ test("JSON listings honors explicit limit and marks truncated", () => {
       },
     };
     handleDomainListingsJson({}, res, {
-      metadataBaseUrl: "https://snatch.auction",
+      metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "indexed", limit: "2" },
       isProduction: true,
     });
@@ -251,7 +251,7 @@ test("full JSON export remains guarded in production", () => {
       },
     };
     handleDomainListingsJson({}, res, {
-      metadataBaseUrl: "https://snatch.auction",
+      metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "indexed", all: "true" },
       isProduction: true,
       allowFullFeed: false,

@@ -19,6 +19,7 @@ const {
   resolveNdjsonFeedOptions,
   resolveListingScope,
 } = require("../server/candidate-store/feed-guard");
+const { DEFAULT_PUBLIC_BASE_URL } = require("../server/public-url");
 
 function handleDomainProductBySlug(_req, res, slug, options = {}) {
   const record = getDurableCandidateBySlug(slug);
@@ -38,7 +39,7 @@ function handleDomainGraphBySlug(_req, res, slug, options = {}) {
     res.end(JSON.stringify({ error: "Domain graph not found." }));
     return;
   }
-  const graph = renderProductGraphApi(record, options.metadataBaseUrl || "https://snatch.auction");
+  const graph = renderProductGraphApi(record, options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL);
   res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(graph));
 }
@@ -46,7 +47,7 @@ function handleDomainGraphBySlug(_req, res, slug, options = {}) {
 function handleDomainFeedNdjson(_req, res, options = {}) {
   const feedOptions = resolveNdjsonFeedOptions(options.query || {});
   const records = listDurableCandidates({ limit: feedOptions.limit });
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8" });
   for (const graph of renderDomainFeedNdjson(records, metadataBaseUrl)) {
     res.write(`${JSON.stringify(graph)}\n`);
@@ -58,7 +59,7 @@ function handleDomainFeedJson(_req, res, options = {}) {
   const feedOptions = resolveJsonFeedOptions(options.query || {}, options);
   const totalAvailable = countDurableCandidates();
   const records = listDurableCandidates({ limit: feedOptions.limit });
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const payload = {
     ...renderDomainFeedJson(records, metadataBaseUrl),
     totalAvailable,
@@ -74,7 +75,7 @@ function handleDomainFeedJson(_req, res, options = {}) {
 function handleDomainListingsNdjson(_req, res, options = {}) {
   const scope = resolveListingScope(options.query || {});
   const feedOptions = resolveNdjsonFeedOptions(options.query || {});
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   let records = listListingCandidates(scope, { metadataBaseUrl });
   if (feedOptions.limit !== null) {
     records = records.slice(0, feedOptions.limit);
@@ -89,7 +90,7 @@ function handleDomainListingsNdjson(_req, res, options = {}) {
 function handleDomainListingsJson(_req, res, options = {}) {
   const scope = resolveListingScope(options.query || {});
   const feedOptions = resolveJsonFeedOptions(options.query || {}, options);
-  const metadataBaseUrl = options.metadataBaseUrl || "https://snatch.auction";
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const totalAvailable = countListingCandidates(scope, { metadataBaseUrl });
   const allRecords = listListingCandidates(scope, { metadataBaseUrl });
   const records = feedOptions.limit !== null ? allRecords.slice(0, feedOptions.limit) : allRecords;

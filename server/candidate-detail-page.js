@@ -10,7 +10,7 @@ const {
   resolveIntentApplicationCategory,
   titleCaseWords,
 } = require("./domain-fetch/intent-session");
-const { toPublicMetadataUrl } = require("./public-url");
+const { toPublicMetadataUrl, DEFAULT_PUBLIC_BASE_URL } = require("./public-url");
 const { renderSnatchLogoAnchor } = require("./snatch-logo-markup");
 const { buildSeoJsonLd, buildSeoRenderData } = require("./renderers/seo-renderer");
 const { buildIntentOverlay } = require("./renderers/overlay-renderer");
@@ -864,7 +864,7 @@ function buildCandidateJsonLd(candidate, canonicalUrl, ogImage, stale, matchedIn
 
   const {
     indexable = false,
-    metadataBaseUrl = "https://snatch.auction",
+    metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL,
     intentRecord = null,
   } = options;
   const scores = candidate.scores || {};

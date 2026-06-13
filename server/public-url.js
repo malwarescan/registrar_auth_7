@@ -1,3 +1,5 @@
+const DEFAULT_PUBLIC_BASE_URL = "https://urlsnatcher.com";
+
 function normalizeBaseUrl(value) {
   return String(value || "")
     .trim()
@@ -15,7 +17,7 @@ function getPublicBaseUrl(options = {}) {
       Boolean(process.env.RAILWAY_ENVIRONMENT_NAME) ||
       Boolean(process.env.RAILWAY_PROJECT_ID));
 
-  if (isProduction) return "https://snatch.auction";
+  if (isProduction) return DEFAULT_PUBLIC_BASE_URL;
   return `http://localhost:${port}`;
 }
 
@@ -26,7 +28,7 @@ function getMetadataBaseUrl(options = {}) {
   if (options.allowLocalhostInMetadata) {
     return getPublicBaseUrl(options);
   }
-  return "https://snatch.auction";
+  return DEFAULT_PUBLIC_BASE_URL;
 }
 
 function toAbsolutePublicUrl(pathname, options = {}) {
@@ -42,6 +44,7 @@ function toPublicMetadataUrl(pathname, options = {}) {
 }
 
 module.exports = {
+  DEFAULT_PUBLIC_BASE_URL,
   getPublicBaseUrl,
   getMetadataBaseUrl,
   toAbsolutePublicUrl,

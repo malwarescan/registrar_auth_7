@@ -8,6 +8,8 @@ const {
 const { validatePromotionGate, isGraphComplete } = require("./promotion-gate");
 const { resolveLifecycleState } = require("./product-lifecycle");
 const { applySeoTier, isIndexNowTier, SEO_TIER, validateIndexNowEligibility, isProductOfferSchemaComplete } = require("./seo-tier");
+const { validateSitemapEligibility } = require("./sitemap-freshness");
+const { touchIndexNowBatchTtlForSitemap } = require("./index-now-batch");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 const {
   configureIndexNowBatchPath,
@@ -169,14 +171,14 @@ function countDurableCandidates() {
 function listSitemapCandidates(options = {}) {
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const now = options.now ?? Date.now();
+  if (usingIndexNowBatchStore()) {
+    touchIndexNowBatchTtlForSitemap(now);
+  }
   return listDurableCandidates().filter((record) => {
     if (!record?.slug || !record.domain) return false;
-    if (resolveLifecycleState(record) !== "active") return false;
-    if (!isIndexNowTier(record)) return false;
-    if (!record.canonicalUrl || record.canonicalUrl.includes("?")) return false;
     if (!isGraphComplete(record, metadataBaseUrl)) return false;
     if (!isProductOfferSchemaComplete(record, metadataBaseUrl)) return false;
-    if (validateIndexNowEligibility(record, now, { metadataBaseUrl, assetsDir: options.assetsDir }) !== null) {
+    if (validateSitemapEligibility(record, now, { metadataBaseUrl, assetsDir: options.assetsDir }) !== null) {
       return false;
     }
     return true;

@@ -40,6 +40,7 @@ const { configureDefaultProductStore } = require("./server/candidate-store/store
 const { buildRobotsTxt, resolveSitemapResponse } = require("./server/sitemap");
 const { renderSnatchLogoAnchor } = require("./server/snatch-logo-markup");
 const { renderCandidatePageHtml } = require("./server/candidate-detail-page");
+const { resolveLocalProductAssetPath } = require("./server/product-asset");
 
 const ROOT = path.resolve(__dirname);
 const ENV_FILES = [".env.local", ".env"];
@@ -252,6 +253,45 @@ function sendRobotsTxt(req, res, options = {}) {
   res.end(body);
 }
 
+function sendProductAssetResponse(req, res, slug) {
+  const normalized = String(slug || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "");
+  if (!normalized) {
+    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Not found");
+    return;
+  }
+
+  const filePath = resolveLocalProductAssetPath(normalized);
+  if (!filePath.startsWith(ROOT)) {
+    res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Forbidden");
+    return;
+  }
+
+  const headers = {
+    "Content-Type": "image/png",
+    "Cache-Control": "public, max-age=86400",
+  };
+
+  if (req.method === "HEAD") {
+    res.writeHead(200, headers);
+    res.end();
+    return;
+  }
+
+  fs.readFile(filePath, (err, content) => {
+    if (err) {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("Not found");
+      return;
+    }
+    res.writeHead(200, headers);
+    res.end(content);
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   const host = req.headers.host || `localhost:${PORT}`;
   const requestUrl = new URL(req.url || "/", `http://${host}`);
@@ -447,6 +487,12 @@ const server = http.createServer(async (req, res) => {
       res.end(html);
       return;
     }
+  }
+
+  if ((req.method === "GET" || req.method === "HEAD") && pathname.startsWith("/domain-assets/") && pathname.endsWith(".png")) {
+    const slug = pathname.slice("/domain-assets/".length, -".png".length);
+    sendProductAssetResponse(req, res, slug);
+    return;
   }
 
   if (req.method === "GET" && pathname.startsWith("/domains/")) {

@@ -120,7 +120,7 @@ Every NameSilo auction durable record gets a full product page at `/domains/{slu
 | `hold-noindex` | `noindex,follow` | no | Default for new ingests; eligible for batch promotion |
 | `archive` | `noindex` | no | Ended, sold, or unavailable auctions |
 
-Sitemap inclusion filter (`listSitemapCandidates`): lifecycle active, `index-now` tier, fresh `statusExpiresAt`, passes full `validateIndexNowEligibility`, bare canonical (no `?`), product graph + Product/Offer schema complete.
+Sitemap inclusion filter (`listSitemapCandidates`): lifecycle active, `index-now` tier, `statusVerifiedAt` within sitemap freshness window (default 24h, `SITEMAP_FRESHNESS_HOURS`), graph + Product/Offer schema complete, bare canonical (no `?`). Short `statusExpiresAt` (15 min) drives UI/API freshness only — not sitemap eligibility.
 
 Domain sitemap `lastmod` order: `statusVerifiedAt`, then `updatedAt`, `publishedAt`, `createdAt` (ISO 8601).
 
@@ -139,7 +139,7 @@ Expand index tier in batches (500 → 2,000 → 5,000 → 10,000) only after GSC
 
 Run `node scripts/verify-sitemap-strategy.js` for current counts. Frozen QA manifest: `data/reports/index-batch-500-manifest-2026-06-12T19-29-50-048Z.json`.
 
-Production deploy ships the frozen 500-record batch in `data/index-now-batch.json` (regenerate with `npm run export:index-now-batch` after promotion changes). Railway uses this when `data/product-records/` is absent. Server startup refreshes stale `statusExpiresAt` TTL for index-now batch records so the domain sitemap stays populated between ingests.
+Production deploy ships the frozen 500-record batch in `data/index-now-batch.json` (regenerate with `npm run export:index-now-batch` after promotion changes). Railway uses this when `data/product-records/` is absent. Sitemap generation refreshes short TTL on read for batch records still within the sitemap freshness window.
 
 ## Persistent APIs
 

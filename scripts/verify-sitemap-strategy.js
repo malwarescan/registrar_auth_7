@@ -2,6 +2,7 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const https = require("https");
 
 const ROOT = path.join(__dirname, "..");
 const { configureDefaultProductStore } = require(path.join(ROOT, "server", "candidate-store", "store-paths"));
@@ -19,12 +20,20 @@ const {
   buildRobotsTxt,
 } = require(path.join(ROOT, "server", "sitemap"));
 const { getMetadataBaseUrl } = require(path.join(ROOT, "server", "public-url"));
+const { validateSitemapEligibility, getSitemapFreshnessMs } = require(path.join(
+  ROOT,
+  "server",
+  "candidate-store",
+  "sitemap-freshness"
+));
 
 const args = process.argv.slice(2);
-const baseUrl = args.find((a) => a.startsWith("--base-url="))?.split("=")[1] || "http://localhost:4173";
+const productionReport = args.includes("--production") || args.includes("--production-report");
+const baseUrl =
+  args.find((a) => a.startsWith("--base-url="))?.split("=")[1] ||
+  (productionReport ? "https://urlsnatcher.com" : "http://localhost:4173");
 const sampleSize = Number(args.find((a) => a.startsWith("--sample="))?.split("=")[1] || 10);
 const checkAllUrls = !args.includes("--sample-only");
-const productionReport = args.includes("--production") || args.includes("--production-report");
 const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 const outputArg = args.find((a) => a.startsWith("--output="));
 const outputPath =
@@ -42,7 +51,8 @@ configureDefaultProductStore();
 
 function get(url) {
   return new Promise((resolve, reject) => {
-    const req = http.get(url, (res) => {
+    const client = url.startsWith("https:") ? https : http;
+    const req = client.get(url, (res) => {
       let body = "";
       res.on("data", (chunk) => {
         body += chunk;
@@ -120,6 +130,20 @@ async function mapPool(items, concurrency, worker) {
     failures.push(
       `index-now count ${tierCounts[SEO_TIER.INDEX_NOW]} != listSitemapCandidates ${sitemapRecords.length}`
     );
+  }
+
+  const now = Date.now();
+  const recentIndexNow = records.filter((record) => resolveSeoTier(record) === SEO_TIER.INDEX_NOW);
+  for (const record of recentIndexNow.slice(0, 5)) {
+    const verifiedAt = record.statusVerifiedAt ? new Date(record.statusVerifiedAt).getTime() : 0;
+    if (!verifiedAt || now - verifiedAt > getSitemapFreshnessMs()) continue;
+    const expiredShortTtl = {
+      ...record,
+      statusExpiresAt: new Date(now - 60 * 1000).toISOString(),
+    };
+    if (validateSitemapEligibility(expiredShortTtl, now) !== null) {
+      failures.push(`${record.slug}: expired statusExpiresAt should remain sitemap eligible within freshness window`);
+    }
   }
 
   const metadataBase = getMetadataBaseUrl({ isProduction: true });

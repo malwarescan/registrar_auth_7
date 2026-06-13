@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { resolveSeoTier, SEO_TIER } = require("./seo-tier");
+const { getSitemapFreshnessMs } = require("./sitemap-freshness");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const DEFAULT_BATCH_PATH = path.join(ROOT, "data", "index-now-batch.json");
@@ -25,7 +26,9 @@ function refreshIndexNowBatchTtl(batch, now = Date.now()) {
     if (!record || resolveSeoTier(record) !== SEO_TIER.INDEX_NOW) continue;
     const expiresAt = record.statusExpiresAt ? new Date(record.statusExpiresAt).getTime() : 0;
     if (!expiresAt || Number.isNaN(expiresAt) || expiresAt <= now) {
-      record.statusVerifiedAt = new Date(now).toISOString();
+      if (!record.statusVerifiedAt) {
+        record.statusVerifiedAt = new Date(now).toISOString();
+      }
       record.statusExpiresAt = new Date(now + STATUS_TTL_MS).toISOString();
     }
   }
@@ -64,6 +67,27 @@ function countIndexNowBatchRecords() {
   return listIndexNowBatchRecords().length;
 }
 
+function isWithinSitemapVerificationWindow(record, now = Date.now()) {
+  const verifiedAt = record?.statusVerifiedAt ? new Date(record.statusVerifiedAt).getTime() : 0;
+  if (!verifiedAt || Number.isNaN(verifiedAt)) return false;
+  return now - verifiedAt <= getSitemapFreshnessMs();
+}
+
+function touchIndexNowBatchTtlForSitemap(now = Date.now()) {
+  const batch = loadIndexNowBatch({ refreshTtl: false });
+  if (!batch) return;
+
+  for (const record of Object.values(batch)) {
+    if (!record || resolveSeoTier(record) !== SEO_TIER.INDEX_NOW) continue;
+    if (!isWithinSitemapVerificationWindow(record, now)) continue;
+
+    const expiresAt = record.statusExpiresAt ? new Date(record.statusExpiresAt).getTime() : 0;
+    if (!expiresAt || Number.isNaN(expiresAt) || expiresAt <= now) {
+      record.statusExpiresAt = new Date(now + STATUS_TTL_MS).toISOString();
+    }
+  }
+}
+
 module.exports = {
   DEFAULT_BATCH_PATH,
   STATUS_TTL_MS,
@@ -74,4 +98,6 @@ module.exports = {
   getIndexNowBatchRecord,
   listIndexNowBatchRecords,
   countIndexNowBatchRecords,
+  isWithinSitemapVerificationWindow,
+  touchIndexNowBatchTtlForSitemap,
 };

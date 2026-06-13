@@ -166,7 +166,7 @@ test("overlay page is noindex with bare canonical and unchanged product title", 
   }
 });
 
-test("stale index-now records are excluded from sitemap until refreshed", () => {
+test("expired short TTL keeps sitemap eligibility while statusVerifiedAt is recent", () => {
   const tempDir = makeTempStore();
   try {
     seedFreshRecord("staleindexed.com");
@@ -175,14 +175,15 @@ test("stale index-now records are excluded from sitemap until refreshed", () => 
       ...getDurableCandidateBySlug("staleindexed-com"),
       statusExpiresAt: new Date(Date.now() - 60_000).toISOString(),
     });
-    assert.equal(listSitemapCandidates().length, 0);
+    assert.equal(listSitemapCandidates().length, 1);
+
     const now = Date.now();
     upsertProductRecord({
       ...getDurableCandidateBySlug("staleindexed-com"),
-      statusVerifiedAt: new Date(now).toISOString(),
-      statusExpiresAt: new Date(now + 15 * 60 * 1000).toISOString(),
+      statusVerifiedAt: new Date(now - 25 * 60 * 60 * 1000).toISOString(),
+      statusExpiresAt: new Date(now - 60_000).toISOString(),
     });
-    assert.equal(listSitemapCandidates().length, 1);
+    assert.equal(listSitemapCandidates({ now }).length, 0);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

@@ -11,6 +11,7 @@ const {
   titleCaseWords,
 } = require("./domain-fetch/intent-session");
 const { toPublicMetadataUrl, DEFAULT_PUBLIC_BASE_URL } = require("./public-url");
+const { resolveProductOgImageUrl } = require("./product-asset");
 const { renderSnatchLogoAnchor } = require("./snatch-logo-markup");
 const { buildSeoJsonLd, buildSeoRenderData } = require("./renderers/seo-renderer");
 const { buildIntentOverlay } = require("./renderers/overlay-renderer");
@@ -1041,7 +1042,7 @@ function renderSessionRecommendationPage(candidate, pageContext = {}, options = 
   const slug = candidate.slug || candidate.domain.replace(/\./g, "-");
   const canonicalUrl =
     candidate.canonicalUrl || toPublicMetadataUrl(`/domains/${slug}`, metadataOptions);
-  const ogImage = toPublicMetadataUrl(`/domain-assets/${slug}.png`, metadataOptions);
+  const ogImage = resolveProductOgImageUrl(slug, metadataOptions);
   const metadataBaseUrl = toPublicMetadataUrl("/", metadataOptions).replace(/\/$/, "");
   const stale = isStatusStale(candidate);
   const visibleStatus = stale ? "pending-verification" : candidate.status;
@@ -1286,7 +1287,7 @@ function renderCanonicalDomainPage(candidate, pageContext = {}, options = {}) {
   const { port, isProduction } = options;
   const metadataOptions = { port, isProduction, allowLocalhostInMetadata: false };
   const slug = candidate.slug || candidate.domain.replace(/\./g, "-");
-  const ogImage = toPublicMetadataUrl(`/domain-assets/${slug}.png`, metadataOptions);
+  const ogImage = resolveProductOgImageUrl(slug, metadataOptions);
   const metadataBaseUrl = toPublicMetadataUrl("/", metadataOptions).replace(/\/$/, "");
   const stale = inactive || isStatusStale(candidate);
   const record = resolveProductRecord(candidate, { ...options, indexable });
@@ -1440,7 +1441,7 @@ function renderCanonicalDomainPage(candidate, pageContext = {}, options = {}) {
 function renderIntentOverlayPage(baseCandidate, sessionCandidate, pageContext = {}, options = {}) {
   const metadataOptions = { port: options.port, isProduction: options.isProduction, allowLocalhostInMetadata: false };
   const slug = baseCandidate.slug || baseCandidate.domain.replace(/\./g, "-");
-  const ogImage = toPublicMetadataUrl(`/domain-assets/${slug}.png`, metadataOptions);
+  const ogImage = resolveProductOgImageUrl(slug, metadataOptions);
   const metadataBaseUrl = toPublicMetadataUrl("/", metadataOptions).replace(/\/$/, "");
   const stale = isStatusStale(baseCandidate);
   const record = resolveProductRecord(baseCandidate, options);

@@ -87,7 +87,7 @@ Browser navigation (normal address-bar visits) renders an HTML preview page for 
 ### Marketplace graph export
 
 - Graph export (NDJSON): `/api/domain-graph.ndjson` — marketplace graph nodes/edges for AI retrieval
-  - Node types: DomainProduct, Offer, Provider, TLD, Category, UseCase, ComparableDomain
+  - Node types: Domain, Offer, Auction, Category, UseCase, Provider, TLD, Intent, Persona, ComparableDomain
   - One `MarketplaceGraphRecord` line per durable domain record
 
 ### Dataset / DataFeed metadata

@@ -1,10 +1,6 @@
-const fs = require("fs");
-const path = require("path");
 const { listPublishedIntents } = require("./published-catalog");
 const { listSitemapCandidates } = require("./candidate-store/durable-candidates");
 const { toAbsolutePublicUrl } = require("./public-url");
-
-const ROOT = path.resolve(__dirname, "..");
 
 const SITEMAP_INDEX_CHILDREN = [
   "/sitemap-core.xml",
@@ -34,17 +30,8 @@ function resolveDomainLastmod(record) {
   );
 }
 
-function isPublicStaticRoute(relativePath) {
-  const filePath = path.join(ROOT, relativePath.replace(/^\//, ""));
-  return fs.existsSync(filePath);
-}
-
 function getCoreSitemapPaths() {
-  const paths = ["/", "/experiments/intent-fetch/", "/methodology/"];
-  if (isPublicStaticRoute("/experiments/auction-radar/index.html")) {
-    paths.push("/experiments/auction-radar/");
-  }
-  return [...new Set(paths)];
+  return ["/", "/experiments/intent-fetch/", "/methodology/"];
 }
 
 function getIntentSitemapPaths() {

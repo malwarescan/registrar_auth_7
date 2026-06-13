@@ -10,10 +10,16 @@ const {
   renderDomainFeedJson,
 } = require("../server/renderers/feed-renderer");
 const {
-  renderDomainListingsNdjson,
+  streamDomainListingsNdjson,
   renderDomainListingsJson,
-} = require("../server/renderers/listings-renderer");
-const { listListingCandidates, countListingCandidates } = require("../server/candidate-store/listing-feed");
+} = require("../server/renderers/listing-feed-renderer");
+const { streamDomainGraphNdjson } = require("../server/renderers/graph-feed-renderer");
+const { renderDomainListingsDatasetMetadata } = require("../server/renderers/dataset-metadata-renderer");
+const { sendNdjsonHeaders, sendJsonHeaders } = require("../server/renderers/feed-headers");
+const {
+  listListingCandidates,
+  countListingCandidates,
+} = require("../server/candidate-store/listing-feed");
 const {
   resolveJsonFeedOptions,
   resolveNdjsonFeedOptions,
@@ -24,23 +30,23 @@ const { DEFAULT_PUBLIC_BASE_URL } = require("../server/public-url");
 function handleDomainProductBySlug(_req, res, slug, options = {}) {
   const record = getDurableCandidateBySlug(slug);
   if (!record) {
-    res.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
+    sendJsonHeaders(res, 404);
     res.end(JSON.stringify({ error: "Domain product record not found." }));
     return;
   }
-  res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+  sendJsonHeaders(res);
   res.end(JSON.stringify(renderProductRecordApi(record)));
 }
 
 function handleDomainGraphBySlug(_req, res, slug, options = {}) {
   const record = getDurableCandidateBySlug(slug);
   if (!record) {
-    res.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
+    sendJsonHeaders(res, 404);
     res.end(JSON.stringify({ error: "Domain graph not found." }));
     return;
   }
   const graph = renderProductGraphApi(record, options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL);
-  res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+  sendJsonHeaders(res);
   res.end(JSON.stringify(graph));
 }
 
@@ -48,7 +54,7 @@ function handleDomainFeedNdjson(_req, res, options = {}) {
   const feedOptions = resolveNdjsonFeedOptions(options.query || {});
   const records = listDurableCandidates({ limit: feedOptions.limit });
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
-  res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8" });
+  sendNdjsonHeaders(res);
   for (const graph of renderDomainFeedNdjson(records, metadataBaseUrl)) {
     res.write(`${JSON.stringify(graph)}\n`);
   }
@@ -68,7 +74,7 @@ function handleDomainFeedJson(_req, res, options = {}) {
     allRequested: feedOptions.allRequested,
     allAllowed: feedOptions.allAllowed,
   };
-  res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+  sendJsonHeaders(res);
   res.end(JSON.stringify(payload));
 }
 
@@ -80,11 +86,8 @@ function handleDomainListingsNdjson(_req, res, options = {}) {
   if (feedOptions.limit !== null) {
     records = records.slice(0, feedOptions.limit);
   }
-  res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8" });
-  for (const listing of renderDomainListingsNdjson(records, metadataBaseUrl)) {
-    res.write(`${JSON.stringify(listing)}\n`);
-  }
-  res.end();
+  sendNdjsonHeaders(res);
+  streamDomainListingsNdjson(records, res, metadataBaseUrl);
 }
 
 function handleDomainListingsJson(_req, res, options = {}) {
@@ -103,7 +106,31 @@ function handleDomainListingsJson(_req, res, options = {}) {
     allRequested: feedOptions.allRequested,
     allAllowed: feedOptions.allAllowed,
   });
-  res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+  sendJsonHeaders(res);
+  res.end(JSON.stringify(payload));
+}
+
+function handleDomainGraphNdjson(_req, res, options = {}) {
+  const feedOptions = resolveNdjsonFeedOptions(options.query || {});
+  const records = listDurableCandidates({ limit: feedOptions.limit });
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
+  sendNdjsonHeaders(res);
+  streamDomainGraphNdjson(records, res, metadataBaseUrl);
+}
+
+function handleDomainListingsDatasetJson(_req, res, options = {}) {
+  const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
+  const payload = renderDomainListingsDatasetMetadata(
+    {
+      listingsIndexed: countListingCandidates("indexed", { metadataBaseUrl }),
+      listingsActive: countListingCandidates("active", { metadataBaseUrl }),
+      listingsArchive: countListingCandidates("archive", { metadataBaseUrl }),
+      catalogTotal: countDurableCandidates(),
+      graphTotal: countDurableCandidates(),
+    },
+    metadataBaseUrl
+  );
+  sendJsonHeaders(res);
   res.end(JSON.stringify(payload));
 }
 
@@ -119,5 +146,7 @@ module.exports = {
   handleDomainFeedJson,
   handleDomainListingsNdjson,
   handleDomainListingsJson,
+  handleDomainGraphNdjson,
+  handleDomainListingsDatasetJson,
   resolveSlugFromApiPath,
 };

@@ -19,6 +19,8 @@ const {
   handleDomainFeedJson,
   handleDomainListingsNdjson,
   handleDomainListingsJson,
+  handleDomainGraphNdjson,
+  handleDomainListingsDatasetJson,
   resolveSlugFromApiPath,
 } = require("./api/domain-product");
 const { findSessionCandidateBySlug } = require("./server/domain-fetch/candidate-service");
@@ -195,6 +197,56 @@ function serveStatic(req, res, requestUrl) {
   });
 }
 
+const SITEMAP_PATHS = new Set([
+  "/sitemap.xml",
+  "/sitemap-core.xml",
+  "/sitemap-intents.xml",
+  "/sitemap-domains-indexed.xml",
+]);
+
+function sendSitemapResponse(req, res, pathname, options = {}) {
+  const xml = resolveSitemapResponse(pathname, options);
+  if (!xml) return false;
+
+  const headers = {
+    "Content-Type": "application/xml; charset=utf-8",
+    "Content-Disposition": "inline",
+    "Cache-Control": "public, max-age=300",
+    "X-Content-Type-Options": "nosniff",
+  };
+
+  if (req.method === "HEAD") {
+    res.writeHead(200, headers);
+    res.end();
+    return true;
+  }
+
+  if (req.method === "GET") {
+    res.writeHead(200, headers);
+    res.end(xml);
+    return true;
+  }
+
+  return false;
+}
+
+function sendRobotsTxt(req, res, options = {}) {
+  const body = buildRobotsTxt(options);
+  const headers = {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "public, max-age=300",
+  };
+
+  if (req.method === "HEAD") {
+    res.writeHead(200, headers);
+    res.end();
+    return;
+  }
+
+  res.writeHead(200, headers);
+  res.end(body);
+}
+
 const server = http.createServer(async (req, res) => {
   const host = req.headers.host || `localhost:${PORT}`;
   const requestUrl = new URL(req.url || "/", `http://${host}`);
@@ -322,6 +374,21 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET" && pathname === "/api/domain-listings.dataset.json") {
+    handleDomainListingsDatasetJson(req, res, {
+      metadataBaseUrl: getMetadataBaseUrl({ port: PORT, isProduction: IS_PRODUCTION }),
+    });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/domain-graph.ndjson") {
+    handleDomainGraphNdjson(req, res, {
+      metadataBaseUrl: getMetadataBaseUrl({ port: PORT, isProduction: IS_PRODUCTION }),
+      query: Object.fromEntries(requestUrl.searchParams.entries()),
+    });
+    return;
+  }
+
   if (req.method === "GET" && pathname.startsWith("/api/domains/") && pathname.endsWith("/graph.json")) {
     const slug = resolveSlugFromApiPath(pathname, "/api/domains/");
     handleDomainGraphBySlug(req, res, slug, {
@@ -336,18 +403,19 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && pathname.startsWith("/sitemap")) {
-    const xml = resolveSitemapResponse(pathname, { port: PORT, isProduction: IS_PRODUCTION });
-    if (xml) {
-      res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
-      res.end(xml);
+  if (SITEMAP_PATHS.has(pathname) && (req.method === "GET" || req.method === "HEAD")) {
+    if (
+      sendSitemapResponse(req, res, pathname, {
+        port: PORT,
+        isProduction: IS_PRODUCTION,
+      })
+    ) {
       return;
     }
   }
 
-  if (req.method === "GET" && pathname === "/robots.txt") {
-    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end(buildRobotsTxt({ port: PORT, isProduction: IS_PRODUCTION }));
+  if (pathname === "/robots.txt" && (req.method === "GET" || req.method === "HEAD")) {
+    sendRobotsTxt(req, res, { port: PORT, isProduction: IS_PRODUCTION });
     return;
   }
 

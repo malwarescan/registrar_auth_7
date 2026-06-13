@@ -14,9 +14,15 @@ const {
 const { listListingCandidates } = require("../server/candidate-store/listing-feed");
 const { resolveListingScope } = require("../server/candidate-store/feed-guard");
 const { renderDomainListing } = require("../server/renderers/listings-renderer");
+const { buildGraphFeedRecord } = require("../server/renderers/graph-feed-renderer");
+const { NDJSON_INLINE_HEADERS, JSON_INLINE_HEADERS } = require("../server/renderers/feed-headers");
 const {
   handleDomainListingsNdjson,
   handleDomainListingsJson,
+  handleDomainFeedNdjson,
+  handleDomainFeedJson,
+  handleDomainGraphNdjson,
+  handleDomainListingsDatasetJson,
 } = require("../api/domain-product");
 
 function sampleAuction(domain, overrides = {}) {
@@ -73,7 +79,12 @@ function seedScopeFixtures() {
 
 function collectNdjson(res) {
   let body = "";
-  res.writeHead = () => {};
+  let status = 200;
+  let headers = null;
+  res.writeHead = (code, nextHeaders) => {
+    status = code;
+    headers = nextHeaders;
+  };
   res.write = (chunk) => {
     body += chunk;
   };
@@ -82,6 +93,12 @@ function collectNdjson(res) {
   };
   return {
     res,
+    getStatus() {
+      return status;
+    },
+    getHeaders() {
+      return headers;
+    },
     parse() {
       return body
         .trim()
@@ -90,6 +107,31 @@ function collectNdjson(res) {
         .map((line) => JSON.parse(line));
     },
   };
+}
+
+function collectJson(res) {
+  let body = "";
+  let status = 200;
+  let headers = null;
+  const response = {
+    writeHead(code, nextHeaders) {
+      status = code;
+      headers = nextHeaders;
+    },
+    end(payload) {
+      body = payload;
+    },
+    getStatus() {
+      return status;
+    },
+    getHeaders() {
+      return headers;
+    },
+    parse() {
+      return JSON.parse(body);
+    },
+  };
+  return response;
 }
 
 test.afterEach(() => resetStorePaths());
@@ -110,6 +152,7 @@ test("listings NDJSON default returns indexed records only", () => {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: {},
     });
+    assert.deepEqual(sink.getHeaders(), NDJSON_INLINE_HEADERS);
     const lines = sink.parse();
     assert.equal(lines.length, 1);
     assert.equal(lines[0].slug, "indexedwinner-com");
@@ -185,19 +228,14 @@ test("JSON listings defaults to limit 1000", () => {
       seedFreshRecord(`jsonlimit${index}.com`);
       promoteCandidate(`jsonlimit${index}-com`);
     }
-    let body = "";
-    const res = {
-      writeHead() {},
-      end(payload) {
-        body = payload;
-      },
-    };
+    const res = collectJson({});
     handleDomainListingsJson({}, res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "indexed" },
       isProduction: true,
     });
-    const payload = JSON.parse(body);
+    assert.deepEqual(res.getHeaders(), JSON_INLINE_HEADERS);
+    const payload = res.parse();
     assert.equal(payload.count, 5);
     assert.equal(payload.limit, 1000);
     assert.equal(payload.scope, "indexed");
@@ -214,19 +252,14 @@ test("JSON listings honors explicit limit and marks truncated", () => {
       seedFreshRecord(`jsontrunc${index}.com`);
       promoteCandidate(`jsontrunc${index}-com`);
     }
-    let body = "";
-    const res = {
-      writeHead() {},
-      end(payload) {
-        body = payload;
-      },
-    };
+    const res = collectJson({});
     handleDomainListingsJson({}, res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "indexed", limit: "2" },
       isProduction: true,
     });
-    const payload = JSON.parse(body);
+    assert.deepEqual(res.getHeaders(), JSON_INLINE_HEADERS);
+    const payload = res.parse();
     assert.equal(payload.count, 2);
     assert.equal(payload.limit, 2);
     assert.equal(payload.truncated, true);
@@ -243,24 +276,104 @@ test("full JSON export remains guarded in production", () => {
       seedFreshRecord(`fullguard${index}.com`);
       promoteCandidate(`fullguard${index}-com`);
     }
-    let body = "";
-    const res = {
-      writeHead() {},
-      end(payload) {
-        body = payload;
-      },
-    };
+    const res = collectJson({});
     handleDomainListingsJson({}, res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "indexed", all: "true" },
       isProduction: true,
       allowFullFeed: false,
     });
-    const payload = JSON.parse(body);
+    assert.deepEqual(res.getHeaders(), JSON_INLINE_HEADERS);
+    const payload = res.parse();
     assert.equal(payload.allRequested, true);
     assert.equal(payload.allAllowed, false);
     assert.equal(payload.truncated, true);
     assert.equal(payload.limit, 1000);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("catalog NDJSON and JSON feeds use inline headers", () => {
+  const tempDir = makeTempStore();
+  try {
+    seedFreshRecord("inlinefeed.com");
+    const ndjsonSink = collectNdjson({});
+    handleDomainFeedNdjson({}, ndjsonSink.res, {
+      metadataBaseUrl: "https://urlsnatcher.com",
+      query: {},
+    });
+    assert.deepEqual(ndjsonSink.getHeaders(), NDJSON_INLINE_HEADERS);
+
+    const jsonRes = collectJson({});
+    handleDomainFeedJson({}, jsonRes, {
+      metadataBaseUrl: "https://urlsnatcher.com",
+      query: {},
+      isProduction: false,
+    });
+    assert.deepEqual(jsonRes.getHeaders(), JSON_INLINE_HEADERS);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("graph NDJSON feed emits marketplace graph records with inline headers", () => {
+  const tempDir = makeTempStore();
+  try {
+    seedFreshRecord("graphfeed.com");
+    const sink = collectNdjson({});
+    handleDomainGraphNdjson({}, sink.res, {
+      metadataBaseUrl: "https://urlsnatcher.com",
+      query: {},
+    });
+    assert.deepEqual(sink.getHeaders(), NDJSON_INLINE_HEADERS);
+    const lines = sink.parse();
+    assert.equal(lines.length, 1);
+    assert.equal(lines[0].type, "MarketplaceGraphRecord");
+    assert.equal(lines[0].slug, "graphfeed-com");
+    assert.ok(lines[0].nodes.some((node) => node.type === "DomainProduct"));
+    assert.ok(lines[0].nodes.some((node) => node.type === "Offer"));
+    assert.ok(lines[0].edges.length > 0);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("graph feed record includes typed marketplace nodes", () => {
+  const tempDir = makeTempStore();
+  try {
+    const record = seedFreshRecord("graphnodes.com");
+    record.categoryGuesses = ["Workflow software"];
+    record.buyerUseCases = ["Customer intake"];
+    record.comparableDomains = ["deskflow.com"];
+    upsertProductRecord(record);
+    const graphLine = buildGraphFeedRecord(record, "https://urlsnatcher.com");
+    assert.equal(graphLine.type, "MarketplaceGraphRecord");
+    assert.ok(graphLine.nodes.some((node) => node.type === "Category"));
+    assert.ok(graphLine.nodes.some((node) => node.type === "UseCase"));
+    assert.ok(graphLine.nodes.some((node) => node.type === "TLD"));
+    assert.ok(graphLine.nodes.some((node) => node.type === "Provider"));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("dataset metadata describes all public feeds", () => {
+  const tempDir = makeTempStore();
+  try {
+    seedScopeFixtures();
+    const res = collectJson({});
+    handleDomainListingsDatasetJson({}, res, {
+      metadataBaseUrl: "https://urlsnatcher.com",
+    });
+    assert.deepEqual(res.getHeaders(), JSON_INLINE_HEADERS);
+    const payload = res.parse();
+    assert.equal(payload["@type"], "Dataset");
+    assert.ok(Array.isArray(payload.distribution));
+    assert.ok(payload.distribution.some((entry) => entry.contentUrl.includes("/api/domain-listings.ndjson")));
+    assert.ok(payload.distribution.some((entry) => entry.contentUrl.includes("/api/domain-feed.ndjson")));
+    assert.ok(payload.distribution.some((entry) => entry.contentUrl.includes("/api/domain-graph.ndjson")));
+    assert.ok(Array.isArray(payload.hasPart));
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

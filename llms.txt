@@ -25,25 +25,48 @@ A Decision Candidate is inventory enriched with:
 ## Public discovery surfaces
 
 - Candidate pages: `/domains/:slug`
-- Product graph JSON: `/api/domains/:slug/graph.json`
-- Public listing feed (NDJSON): `/api/domain-listings.ndjson` — default `scope=indexed` (index-now / sitemap-aligned); supports `scope=active|archive`
+- Per-domain graph JSON: `/api/domains/:slug/graph.json`
+
+### Public listing feeds (inline, not forced download)
+
+All feed routes set `Content-Disposition: inline` so browsers display content instead of forcing download.
+
+- Public listing feed (NDJSON): `/api/domain-listings.ndjson`
+  - Default: `scope=indexed` (index-now / sitemap-aligned active listings)
+  - `scope=active` — all active auction product pages, including hold-noindex
+  - `scope=archive` — ended/sold/unavailable records
+  - Headers: `Content-Type: application/x-ndjson; charset=utf-8`, `Content-Disposition: inline`
 - Public listing feed (JSON): `/api/domain-listings.json` — same records as NDJSON, default `limit=1000`
-- Full durable catalog feed (NDJSON): `/api/domain-feed.ndjson` — internal/full machine feed with graph payloads for all durable records
+  - Headers: `Content-Type: application/json; charset=utf-8`, `Content-Disposition: inline`
+
+### Full internal catalog feeds
+
+- Full durable catalog feed (NDJSON): `/api/domain-feed.ndjson` — all durable records with full graph payloads
 - Full durable catalog feed (JSON): `/api/domain-feed.json` — internal catalog JSON, default `limit=1000`
+
+### Marketplace graph export
+
+- Graph export (NDJSON): `/api/domain-graph.ndjson` — marketplace graph nodes/edges for AI retrieval
+  - Node types: DomainProduct, Offer, Provider, TLD, Category, UseCase, ComparableDomain
+  - One `MarketplaceGraphRecord` line per durable domain record
+
+### Dataset / DataFeed metadata
+
+- Feed catalog metadata: `/api/domain-listings.dataset.json`
+  - Schema.org Dataset describing listings, catalog, and graph feeds
 
 ## Sitemaps and SEO tiers (verified implementation)
 
-Submit only `/sitemap.xml` to search engines. It is a sitemap index, not a flat URL list.
+Submit **only** `https://urlsnatcher.com/sitemap.xml` in Google Search Console.
 
-Sitemap index children (source: `server/sitemap.js`):
+Do **not** submit HTML page URLs (for example `/experiments/intent-fetch/` or `/experiments/auction-radar/`) as sitemaps — those are regular pages listed inside `sitemap-core.xml`, not sitemap files. If GSC shows "Sitemap is HTML" for a page URL, remove that submission and keep only `/sitemap.xml`.
 
-- `/sitemap-core.xml` — static/indexable core pages (`/`, `/experiments/intent-fetch/`, `/methodology/`, `/experiments/auction-radar/` when present)
-- `/sitemap-intents.xml` — published intent pages from `published-intents.json` only (no query URLs)
-- `/sitemap-domains-indexed.xml` — **only** `index-now` tier domain product pages
+Valid sitemap endpoints (XML only):
 
-Not implemented yet:
-
-- `/sitemap-domains-archive.xml` — optional future archive discovery; sold/ended/unavailable pages stay out of sitemap for now
+- `/sitemap.xml` — sitemap index (submit this one)
+- `/sitemap-core.xml` — core static pages urlset
+- `/sitemap-intents.xml` — published intent pages urlset
+- `/sitemap-domains-indexed.xml` — index-now domain product pages urlset
 
 `/robots.txt` points to `/sitemap.xml` only.
 

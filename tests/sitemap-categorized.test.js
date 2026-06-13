@@ -53,6 +53,11 @@ test("sitemap index lists sub-sitemaps only", () => {
   const xml = buildSitemapIndex({ port: 4173, isProduction: false });
   assert.match(xml, /<sitemapindex/);
   assert.doesNotMatch(xml, /<urlset/);
+  const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+  for (const loc of locs) {
+    assert.match(loc, /\.xml$/);
+    assert.doesNotMatch(loc, /\/experiments\//);
+  }
   for (const child of SITEMAP_INDEX_CHILDREN) {
     assert.match(xml, new RegExp(child.replace(".", "\\.")));
   }
@@ -67,6 +72,7 @@ test("core sitemap contains core URLs in urlset", () => {
   assert.ok(paths.includes("/"));
   assert.ok(paths.includes("/experiments/intent-fetch/"));
   assert.ok(paths.includes("/methodology/"));
+  assert.equal(paths.includes("/experiments/auction-radar/"), false);
   for (const pathname of paths) {
     assert.match(xml, new RegExp(pathname.replace(/\//g, "\\/")));
   }

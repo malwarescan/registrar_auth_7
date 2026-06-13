@@ -34,6 +34,8 @@ function main() {
     record.seoTier = "index-now";
     record.indexable = true;
     record.published = true;
+    record.canonicalUrl = `https://urlsnatcher.com/domains/${slug}`;
+    record.graphId = `https://urlsnatcher.com/domains/${slug}#graph`;
     record.statusVerifiedAt = new Date(now).toISOString();
     record.statusExpiresAt = new Date(now + STATUS_TTL_MS).toISOString();
     batch[slug] = record;

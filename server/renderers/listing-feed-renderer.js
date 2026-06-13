@@ -7,10 +7,14 @@ function resolveAcquisitionUrl(record = {}) {
   return record.acquisitionPath?.actionUrl || record.acquisitionPath?.url || record.auctionUrl || null;
 }
 
+function resolvePublicCanonicalUrl(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
+  return `${metadataBaseUrl}/domains/${record.slug}`;
+}
+
 function renderDomainListingRecord(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
   if (!record?.slug || !record.domain) return null;
 
-  const canonicalUrl = record.canonicalUrl || `${metadataBaseUrl}/domains/${record.slug}`;
+  const canonicalUrl = resolvePublicCanonicalUrl(record, metadataBaseUrl);
   const lifecycleState = resolveLifecycleState(record);
   const seoTier = resolveSeoTier(record);
   const pageMode = resolveProductPageMode(record);
@@ -74,6 +78,7 @@ function renderDomainListingsJson(records, metadataBaseUrl = DEFAULT_PUBLIC_BASE
 }
 
 module.exports = {
+  resolvePublicCanonicalUrl,
   renderDomainListingRecord,
   streamDomainListingsNdjson,
   renderDomainListingsJson,

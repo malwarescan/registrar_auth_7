@@ -9,6 +9,13 @@ const { validatePromotionGate, isGraphComplete } = require("./promotion-gate");
 const { resolveLifecycleState } = require("./product-lifecycle");
 const { applySeoTier, isIndexNowTier, SEO_TIER, validateIndexNowEligibility, isProductOfferSchemaComplete } = require("./seo-tier");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
+const {
+  configureIndexNowBatchPath,
+  resetIndexNowBatchPath,
+  getIndexNowBatchRecord,
+  listIndexNowBatchRecords,
+  countIndexNowBatchRecords,
+} = require("./index-now-batch");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -16,12 +23,17 @@ let storePaths = {
   durablePath: path.join(ROOT, "data", "durable-candidates.json"),
   publishedPath: path.join(ROOT, "data", "published-candidates.json"),
   recordsDir: null,
+  indexNowBatchPath: null,
 };
 
 function configureStorePaths(options = {}) {
   if (options.durablePath) storePaths.durablePath = options.durablePath;
   if (options.publishedPath) storePaths.publishedPath = options.publishedPath;
   if (options.recordsDir !== undefined) storePaths.recordsDir = options.recordsDir;
+  if (options.indexNowBatchPath !== undefined) {
+    storePaths.indexNowBatchPath = options.indexNowBatchPath;
+    configureIndexNowBatchPath(options.indexNowBatchPath);
+  }
   if (options.publishedPath) {
     const { configurePublishedCatalogPath } = require("./published-catalog-generator");
     configurePublishedCatalogPath(options.publishedPath);
@@ -33,9 +45,15 @@ function resetStorePaths() {
     durablePath: path.join(ROOT, "data", "durable-candidates.json"),
     publishedPath: path.join(ROOT, "data", "published-candidates.json"),
     recordsDir: null,
+    indexNowBatchPath: null,
   };
+  resetIndexNowBatchPath();
   const { resetPublishedCatalogPath } = require("./published-catalog-generator");
   resetPublishedCatalogPath();
+}
+
+function usingIndexNowBatchStore() {
+  return Boolean(!storePaths.recordsDir && storePaths.indexNowBatchPath);
 }
 
 function normalizeSlug(slug) {
@@ -75,6 +93,9 @@ function readRecord(slug) {
         return null;
       }
     }
+  }
+  if (usingIndexNowBatchStore()) {
+    return getIndexNowBatchRecord(normalized);
   }
   return readMapStore()[normalized] || null;
 }
@@ -127,6 +148,10 @@ function listDurableCandidates(options = {}) {
       .filter(Boolean);
     return records;
   }
+  if (usingIndexNowBatchStore()) {
+    const records = listIndexNowBatchRecords();
+    return limit ? records.slice(0, limit) : records;
+  }
   const all = Object.values(readMapStore());
   return limit ? all.slice(0, limit) : all;
 }
@@ -134,6 +159,9 @@ function listDurableCandidates(options = {}) {
 function countDurableCandidates() {
   if (storePaths.recordsDir && fs.existsSync(storePaths.recordsDir)) {
     return fs.readdirSync(storePaths.recordsDir).filter((name) => name.endsWith(".json")).length;
+  }
+  if (usingIndexNowBatchStore()) {
+    return countIndexNowBatchRecords();
   }
   return Object.keys(readMapStore()).length;
 }

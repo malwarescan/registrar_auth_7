@@ -148,7 +148,7 @@ test("listings NDJSON default returns indexed records only", () => {
   try {
     seedScopeFixtures();
     const sink = collectNdjson({});
-    handleDomainListingsNdjson({}, sink.res, {
+    handleDomainListingsNdjson({ headers: { accept: "*/*" } }, sink.res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: {},
     });
@@ -189,7 +189,7 @@ test("listing feed excludes overlays and query URLs", () => {
   try {
     seedScopeFixtures();
     const sink = collectNdjson({});
-    handleDomainListingsNdjson({}, sink.res, {
+    handleDomainListingsNdjson({ headers: { accept: "*/*" } }, sink.res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "active" },
     });
@@ -229,7 +229,7 @@ test("JSON listings defaults to limit 1000", () => {
       promoteCandidate(`jsonlimit${index}-com`);
     }
     const res = collectJson({});
-    handleDomainListingsJson({}, res, {
+    handleDomainListingsJson({ headers: { accept: "*/*" } }, res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "indexed" },
       isProduction: true,
@@ -253,7 +253,7 @@ test("JSON listings honors explicit limit and marks truncated", () => {
       promoteCandidate(`jsontrunc${index}-com`);
     }
     const res = collectJson({});
-    handleDomainListingsJson({}, res, {
+    handleDomainListingsJson({ headers: { accept: "*/*" } }, res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "indexed", limit: "2" },
       isProduction: true,
@@ -277,7 +277,7 @@ test("full JSON export remains guarded in production", () => {
       promoteCandidate(`fullguard${index}-com`);
     }
     const res = collectJson({});
-    handleDomainListingsJson({}, res, {
+    handleDomainListingsJson({ headers: { accept: "*/*" } }, res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: { scope: "indexed", all: "true" },
       isProduction: true,
@@ -299,14 +299,14 @@ test("catalog NDJSON and JSON feeds use inline headers", () => {
   try {
     seedFreshRecord("inlinefeed.com");
     const ndjsonSink = collectNdjson({});
-    handleDomainFeedNdjson({}, ndjsonSink.res, {
+    handleDomainFeedNdjson({ headers: { accept: "*/*" } }, ndjsonSink.res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: {},
     });
     assert.deepEqual(ndjsonSink.getHeaders(), NDJSON_INLINE_HEADERS);
 
     const jsonRes = collectJson({});
-    handleDomainFeedJson({}, jsonRes, {
+    handleDomainFeedJson({ headers: { accept: "*/*" } }, jsonRes, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: {},
       isProduction: false,
@@ -322,7 +322,7 @@ test("graph NDJSON feed emits marketplace graph records with inline headers", ()
   try {
     seedFreshRecord("graphfeed.com");
     const sink = collectNdjson({});
-    handleDomainGraphNdjson({}, sink.res, {
+    handleDomainGraphNdjson({ headers: { accept: "*/*" } }, sink.res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: {},
     });
@@ -358,12 +358,75 @@ test("graph feed record includes typed marketplace nodes", () => {
   }
 });
 
+test("browser navigation renders HTML feed preview instead of download", () => {
+  const tempDir = makeTempStore();
+  try {
+    seedFreshRecord("browserfeed.com");
+    promoteCandidate("browserfeed-com");
+    let body = "";
+    let headers = null;
+    const res = {
+      writeHead(_code, nextHeaders) {
+        headers = nextHeaders;
+      },
+      end(payload) {
+        body = payload;
+      },
+    };
+    handleDomainListingsNdjson(
+      { headers: { accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" } },
+      res,
+      { metadataBaseUrl: "https://urlsnatcher.com", query: {} }
+    );
+    assert.equal(headers["Content-Type"], "text/html; charset=utf-8");
+    assert.match(body, /<title>Domain Listings Feed<\/title>/);
+    assert.match(body, /browserfeed\.com/);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("raw NDJSON mode keeps strict application/x-ndjson content type", () => {
+  const tempDir = makeTempStore();
+  try {
+    seedFreshRecord("rawfeed.com");
+    promoteCandidate("rawfeed-com");
+    const sink = collectNdjson({});
+    handleDomainListingsNdjson(
+      { headers: { accept: "text/html" } },
+      sink.res,
+      { metadataBaseUrl: "https://urlsnatcher.com", query: { view: "raw" } }
+    );
+    assert.equal(sink.getHeaders()["Content-Type"], "application/x-ndjson; charset=utf-8");
+    assert.equal(sink.parse().length, 1);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("default NDJSON API clients receive text/plain inline content type", () => {
+  const tempDir = makeTempStore();
+  try {
+    seedFreshRecord("plainfeed.com");
+    promoteCandidate("plainfeed-com");
+    const sink = collectNdjson({});
+    handleDomainListingsNdjson({ headers: { accept: "*/*" } }, sink.res, {
+      metadataBaseUrl: "https://urlsnatcher.com",
+      query: {},
+    });
+    assert.equal(sink.getHeaders()["Content-Type"], "text/plain; charset=utf-8");
+    assert.equal(sink.getHeaders()["X-Feed-Format"], "application/x-ndjson");
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("dataset metadata describes all public feeds", () => {
   const tempDir = makeTempStore();
   try {
     seedScopeFixtures();
     const res = collectJson({});
-    handleDomainListingsDatasetJson({}, res, {
+    handleDomainListingsDatasetJson({ headers: { accept: "*/*" } }, res, {
       metadataBaseUrl: "https://urlsnatcher.com",
     });
     assert.deepEqual(res.getHeaders(), JSON_INLINE_HEADERS);

@@ -29,7 +29,12 @@ A Decision Candidate is inventory enriched with:
 
 ### Public listing feeds (inline, not forced download)
 
-All feed routes set `Content-Disposition: inline` so browsers display content instead of forcing download.
+All feed routes set `Content-Disposition: inline`.
+
+Browser navigation (normal address-bar visits) renders an HTML preview page for feed URLs. API clients and curl still receive feed bytes directly.
+
+- Default NDJSON delivery: `Content-Type: text/plain; charset=utf-8` with `X-Feed-Format: application/x-ndjson` so browsers display inline instead of downloading unknown MIME types.
+- Strict NDJSON MIME: add `?view=raw` or `?raw=1`, or send `Accept: application/x-ndjson`.
 
 - Public listing feed (NDJSON): `/api/domain-listings.ndjson`
   - Default: `scope=indexed` (index-now / sitemap-aligned active listings)

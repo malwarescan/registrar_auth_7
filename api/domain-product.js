@@ -12,10 +12,20 @@ const {
 const {
   streamDomainListingsNdjson,
   renderDomainListingsJson,
+  renderDomainListingRecord,
 } = require("../server/renderers/listing-feed-renderer");
-const { streamDomainGraphNdjson } = require("../server/renderers/graph-feed-renderer");
+const { buildGraphFeedRecord } = require("../server/renderers/graph-feed-renderer");
 const { renderDomainListingsDatasetMetadata } = require("../server/renderers/dataset-metadata-renderer");
-const { sendNdjsonHeaders, sendJsonHeaders } = require("../server/renderers/feed-headers");
+const {
+  sendNdjsonHeaders,
+  sendJsonHeaders,
+  sendHtmlFeedHeaders,
+  sendNdjsonFeedHeaders,
+} = require("../server/renderers/feed-headers");
+const {
+  wantsHtmlFeedPreview,
+  renderFeedBrowsePage,
+} = require("../server/renderers/feed-browser");
 const {
   listListingCandidates,
   countListingCandidates,
@@ -26,6 +36,22 @@ const {
   resolveListingScope,
 } = require("../server/candidate-store/feed-guard");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../server/public-url");
+
+const FEED_PREVIEW_LINES = 25;
+
+function buildRequestPath(pathname, query = {}) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== null && String(value).length) params.set(key, String(value));
+  }
+  const qs = params.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
+
+function sendFeedBrowsePage(res, options) {
+  sendHtmlFeedHeaders(res);
+  res.end(renderFeedBrowsePage(options));
+}
 
 function handleDomainProductBySlug(_req, res, slug, options = {}) {
   const record = getDurableCandidateBySlug(slug);
@@ -50,19 +76,37 @@ function handleDomainGraphBySlug(_req, res, slug, options = {}) {
   res.end(JSON.stringify(graph));
 }
 
-function handleDomainFeedNdjson(_req, res, options = {}) {
-  const feedOptions = resolveNdjsonFeedOptions(options.query || {});
+function handleDomainFeedNdjson(req, res, options = {}) {
+  const query = options.query || {};
+  const feedOptions = resolveNdjsonFeedOptions(query);
   const records = listDurableCandidates({ limit: feedOptions.limit });
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
-  sendNdjsonHeaders(res);
-  for (const graph of renderDomainFeedNdjson(records, metadataBaseUrl)) {
-    res.write(`${JSON.stringify(graph)}\n`);
+  const lines = renderDomainFeedNdjson(records, metadataBaseUrl).map((entry) => JSON.stringify(entry));
+  const requestPath = buildRequestPath("/api/domain-feed.ndjson", query);
+
+  if (wantsHtmlFeedPreview(req, query)) {
+    sendFeedBrowsePage(res, {
+      title: "Domain Catalog Feed",
+      description: "Full durable catalog NDJSON export with graph payloads.",
+      requestPath,
+      lineCount: lines.length,
+      previewLines: lines.slice(0, FEED_PREVIEW_LINES),
+      links: [
+        { href: `${requestPath}${requestPath.includes("?") ? "&" : "?"}view=raw`, label: "View raw NDJSON" },
+        { href: "/api/domain-feed.json?limit=1000&raw=1", label: "View JSON" },
+      ],
+    });
+    return;
   }
+
+  sendNdjsonFeedHeaders(res, req, query);
+  for (const line of lines) res.write(`${line}\n`);
   res.end();
 }
 
-function handleDomainFeedJson(_req, res, options = {}) {
-  const feedOptions = resolveJsonFeedOptions(options.query || {}, options);
+function handleDomainFeedJson(req, res, options = {}) {
+  const query = options.query || {};
+  const feedOptions = resolveJsonFeedOptions(query, options);
   const totalAvailable = countDurableCandidates();
   const records = listDurableCandidates({ limit: feedOptions.limit });
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
@@ -74,25 +118,67 @@ function handleDomainFeedJson(_req, res, options = {}) {
     allRequested: feedOptions.allRequested,
     allAllowed: feedOptions.allAllowed,
   };
-  sendJsonHeaders(res);
+  const requestPath = buildRequestPath("/api/domain-feed.json", query);
+
+  if (wantsHtmlFeedPreview(req, query)) {
+    sendFeedBrowsePage(res, {
+      title: "Domain Catalog Feed (JSON)",
+      description: "Full durable catalog JSON export.",
+      requestPath,
+      lineCount: payload.records?.length || 0,
+      previewLines: [JSON.stringify(payload, null, 2).slice(0, 12000)],
+      links: [
+        { href: `${requestPath}${requestPath.includes("?") ? "&" : "?"}raw=1`, label: "View raw JSON" },
+        { href: "/api/domain-feed.ndjson?view=raw", label: "View NDJSON" },
+      ],
+    });
+    return;
+  }
+
+  sendJsonHeaders(res, req, query);
   res.end(JSON.stringify(payload));
 }
 
-function handleDomainListingsNdjson(_req, res, options = {}) {
-  const scope = resolveListingScope(options.query || {});
-  const feedOptions = resolveNdjsonFeedOptions(options.query || {});
+function handleDomainListingsNdjson(req, res, options = {}) {
+  const query = options.query || {};
+  const scope = resolveListingScope(query);
+  const feedOptions = resolveNdjsonFeedOptions(query);
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   let records = listListingCandidates(scope, { metadataBaseUrl });
   if (feedOptions.limit !== null) {
     records = records.slice(0, feedOptions.limit);
   }
-  sendNdjsonHeaders(res);
-  streamDomainListingsNdjson(records, res, metadataBaseUrl);
+  const lines = records
+    .map((record) => renderDomainListingRecord(record, metadataBaseUrl))
+    .filter(Boolean)
+    .map((entry) => JSON.stringify(entry));
+  const requestPath = buildRequestPath("/api/domain-listings.ndjson", query);
+
+  if (wantsHtmlFeedPreview(req, query)) {
+    sendFeedBrowsePage(res, {
+      title: "Domain Listings Feed",
+      description: `Public listing feed for scope=${scope}.`,
+      requestPath,
+      lineCount: lines.length,
+      previewLines: lines.slice(0, FEED_PREVIEW_LINES),
+      links: [
+        { href: `${requestPath}${requestPath.includes("?") ? "&" : "?"}view=raw`, label: "View raw NDJSON" },
+        { href: `/api/domain-listings.json?scope=${encodeURIComponent(scope)}&raw=1`, label: "View JSON" },
+        { href: "/api/domain-listings.dataset.json?raw=1", label: "Feed metadata" },
+      ],
+    });
+    return;
+  }
+
+  sendNdjsonFeedHeaders(res, req, query);
+  for (const line of lines) res.write(`${line}\n`);
+  res.end();
 }
 
-function handleDomainListingsJson(_req, res, options = {}) {
-  const scope = resolveListingScope(options.query || {});
-  const feedOptions = resolveJsonFeedOptions(options.query || {}, options);
+function handleDomainListingsJson(req, res, options = {}) {
+  const query = options.query || {};
+  const scope = resolveListingScope(query);
+  const feedOptions = resolveJsonFeedOptions(query, options);
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const totalAvailable = countListingCandidates(scope, { metadataBaseUrl });
   const allRecords = listListingCandidates(scope, { metadataBaseUrl });
@@ -106,19 +192,60 @@ function handleDomainListingsJson(_req, res, options = {}) {
     allRequested: feedOptions.allRequested,
     allAllowed: feedOptions.allAllowed,
   });
-  sendJsonHeaders(res);
+  const requestPath = buildRequestPath("/api/domain-listings.json", query);
+
+  if (wantsHtmlFeedPreview(req, query)) {
+    sendFeedBrowsePage(res, {
+      title: "Domain Listings Feed (JSON)",
+      description: `Public listing feed JSON wrapper for scope=${scope}.`,
+      requestPath,
+      lineCount: payload.listings?.length || 0,
+      previewLines: [JSON.stringify(payload, null, 2).slice(0, 12000)],
+      links: [
+        { href: `${requestPath}${requestPath.includes("?") ? "&" : "?"}raw=1`, label: "View raw JSON" },
+        { href: `/api/domain-listings.ndjson?scope=${encodeURIComponent(scope)}&view=raw`, label: "View NDJSON" },
+      ],
+    });
+    return;
+  }
+
+  sendJsonHeaders(res, req, query);
   res.end(JSON.stringify(payload));
 }
 
-function handleDomainGraphNdjson(_req, res, options = {}) {
-  const feedOptions = resolveNdjsonFeedOptions(options.query || {});
+function handleDomainGraphNdjson(req, res, options = {}) {
+  const query = options.query || {};
+  const feedOptions = resolveNdjsonFeedOptions(query);
   const records = listDurableCandidates({ limit: feedOptions.limit });
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
-  sendNdjsonHeaders(res);
-  streamDomainGraphNdjson(records, res, metadataBaseUrl);
+  const lines = records
+    .map((record) => buildGraphFeedRecord(record, metadataBaseUrl))
+    .filter(Boolean)
+    .map((entry) => JSON.stringify(entry));
+  const requestPath = buildRequestPath("/api/domain-graph.ndjson", query);
+
+  if (wantsHtmlFeedPreview(req, query)) {
+    sendFeedBrowsePage(res, {
+      title: "Domain Graph Feed",
+      description: "Marketplace graph NDJSON export for AI retrieval.",
+      requestPath,
+      lineCount: lines.length,
+      previewLines: lines.slice(0, FEED_PREVIEW_LINES),
+      links: [
+        { href: `${requestPath}${requestPath.includes("?") ? "&" : "?"}view=raw`, label: "View raw NDJSON" },
+        { href: "/api/domain-listings.ndjson?view=raw", label: "View listings feed" },
+      ],
+    });
+    return;
+  }
+
+  sendNdjsonFeedHeaders(res, req, query);
+  for (const line of lines) res.write(`${line}\n`);
+  res.end();
 }
 
-function handleDomainListingsDatasetJson(_req, res, options = {}) {
+function handleDomainListingsDatasetJson(req, res, options = {}) {
+  const query = options.query || {};
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const payload = renderDomainListingsDatasetMetadata(
     {
@@ -130,7 +257,23 @@ function handleDomainListingsDatasetJson(_req, res, options = {}) {
     },
     metadataBaseUrl
   );
-  sendJsonHeaders(res);
+
+  if (wantsHtmlFeedPreview(req, query)) {
+    sendFeedBrowsePage(res, {
+      title: "Domain Feed Metadata",
+      description: "Schema.org Dataset metadata for public feed endpoints.",
+      requestPath: "/api/domain-listings.dataset.json",
+      lineCount: payload.distribution?.length || 0,
+      previewLines: [JSON.stringify(payload, null, 2)],
+      links: [
+        { href: "/api/domain-listings.dataset.json?raw=1", label: "View raw JSON" },
+        { href: "/api/domain-listings.ndjson", label: "Open listings feed" },
+      ],
+    });
+    return;
+  }
+
+  sendJsonHeaders(res, req, query);
   res.end(JSON.stringify(payload));
 }
 

@@ -72,6 +72,7 @@ test("core sitemap contains core URLs in urlset", () => {
   assert.ok(paths.includes("/"));
   assert.ok(paths.includes("/experiments/intent-fetch/"));
   assert.ok(paths.includes("/methodology/"));
+  assert.ok(paths.includes("/data/domain-listings"));
   assert.equal(paths.includes("/experiments/auction-radar/"), false);
   for (const pathname of paths) {
     assert.match(xml, new RegExp(pathname.replace(/\//g, "\\/")));

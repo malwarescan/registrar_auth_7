@@ -28,7 +28,12 @@ const {
   getIntent,
   parseIntentPageContext,
 } = require("./server/domain-fetch/intent-session");
-const { toPublicMetadataUrl, getMetadataBaseUrl } = require("./server/public-url");
+const { getMetadataBaseUrl } = require("./server/public-url");
+const {
+  injectHomeDiscovery,
+  renderFeedLandingPage,
+  resolveFeedLandingKey,
+} = require("./server/renderers/data-feed-landing");
 const { listPublishedCandidates } = require("./server/published-catalog");
 const { resolveDomainPage } = require("./server/candidate-store/resolve-domain-page");
 const { configureDefaultProductStore } = require("./server/candidate-store/store-paths");
@@ -417,6 +422,31 @@ const server = http.createServer(async (req, res) => {
   if (pathname === "/robots.txt" && (req.method === "GET" || req.method === "HEAD")) {
     sendRobotsTxt(req, res, { port: PORT, isProduction: IS_PRODUCTION });
     return;
+  }
+
+  const feedLandingKey = resolveFeedLandingKey(pathname);
+  if (req.method === "GET" && feedLandingKey) {
+    const metadataBaseUrl = getMetadataBaseUrl({ port: PORT, isProduction: IS_PRODUCTION });
+    const html = renderFeedLandingPage(feedLandingKey, metadataBaseUrl);
+    if (html) {
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Content-Disposition": "inline" });
+      res.end(html);
+      return;
+    }
+  }
+
+  if (req.method === "GET" && (pathname === "/experiments/intent-fetch" || pathname === "/")) {
+    const metadataBaseUrl = getMetadataBaseUrl({ port: PORT, isProduction: IS_PRODUCTION });
+    const filePath =
+      pathname === "/"
+        ? path.join(ROOT, "index.html")
+        : path.join(ROOT, "experiments", "intent-fetch", "index.html");
+    if (fs.existsSync(filePath)) {
+      const html = injectHomeDiscovery(patchHtmlAssetVersions(fs.readFileSync(filePath, "utf8")), metadataBaseUrl);
+      res.writeHead(200, staticResponseHeaders(".html"));
+      res.end(html);
+      return;
+    }
   }
 
   if (req.method === "GET" && pathname.startsWith("/domains/")) {

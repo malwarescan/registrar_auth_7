@@ -24,12 +24,47 @@ A Decision Candidate is inventory enriched with:
 
 ## Public discovery surfaces
 
-- Candidate pages: `/domains/:slug`
-- Per-domain graph JSON: `/api/domains/:slug/graph.json`
+### Search engines (URL discovery only)
+
+Submit **only** `https://urlsnatcher.com/sitemap.xml` to Google Search Console.
+
+That index points to XML urlsets only (`sitemap-core.xml`, `sitemap-intents.xml`, `sitemap-domains-indexed.xml`).
+
+Do **not** submit NDJSON/JSON feed URLs as sitemaps. Feeds are machine-readable inventory infrastructure, not sitemap documents.
+
+### AI systems and programmatic clients (feed discovery)
+
+Expose and link these endpoints everywhere:
+
+| Feed | NDJSON | JSON | Landing page |
+|------|--------|------|----------------|
+| Public listings (default `scope=indexed`) | `/api/domain-listings.ndjson` | `/api/domain-listings.json` | `/data/domain-listings` |
+| Full durable catalog | `/api/domain-feed.ndjson` | `/api/domain-feed.json` | `/data/domain-feed` |
+| Marketplace graph export | `/api/domain-graph.ndjson` | — | `/data/domain-graph` |
+| Per-domain graph | — | `/api/domains/{slug}/graph.json` | `/domains/{slug}` |
+
+Dataset metadata JSON: `/api/domain-listings.dataset.json`
+
+Feed landing pages include Dataset + DataFeed schema, record counts, update policy, field lists, and example records.
+
+Homepage injects Dataset schema plus `<link rel="alternate" type="application/x-ndjson">` discovery tags for all three feeds.
+
+Domain product pages link per-domain graph JSON and the public listings feed.
+
+### Graph export node types
+
+`/api/domain-graph.ndjson` emits entity/relationship lines per domain:
+
+- Nodes: `Domain`, `Offer`, `Auction`, `Category`, `UseCase`, `Provider`, `TLD`, `Intent`, `Persona`, `ComparableDomain`
+- Edges: `hasOffer`, `listedInAuction`, `inCategory`, `supportsUseCase`, `hasIntent`, `targetsPersona`, `listedWith`, `relatedTo`, `soldBy`
+
+Future entity pages (not implemented yet): `/categories/{slug}`, persona pages, category↔domain↔use-case interlinks.
+
+### Feed delivery headers
+
+Candidate pages: `/domains/:slug`
 
 ### Public listing feeds (inline, not forced download)
-
-All feed routes set `Content-Disposition: inline`.
 
 Browser navigation (normal address-bar visits) renders an HTML preview page for feed URLs. API clients and curl still receive feed bytes directly.
 

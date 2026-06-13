@@ -331,7 +331,7 @@ test("graph NDJSON feed emits marketplace graph records with inline headers", ()
     assert.equal(lines.length, 1);
     assert.equal(lines[0].type, "MarketplaceGraphRecord");
     assert.equal(lines[0].slug, "graphfeed-com");
-    assert.ok(lines[0].nodes.some((node) => node.type === "DomainProduct"));
+    assert.ok(lines[0].nodes.some((node) => node.type === "Domain"));
     assert.ok(lines[0].nodes.some((node) => node.type === "Offer"));
     assert.ok(lines[0].edges.length > 0);
   } finally {

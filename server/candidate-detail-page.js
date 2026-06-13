@@ -1388,6 +1388,9 @@ function renderCanonicalDomainPage(candidate, pageContext = {}, options = {}) {
     <meta name="twitter:title" content="${escapeHtml(candidate.domain)} | Snatch.auction" />
     <meta name="twitter:description" content="${escapeHtml(pageDescription)}" />
     <meta name="twitter:image" content="${escapeHtml(ogImage)}" />
+    <link rel="alternate" type="application/json" href="${escapeHtml(`${metadataBaseUrl}/api/domains/${slug}/graph.json`)}" title="Domain Product Graph" />
+    <link rel="alternate" type="application/x-ndjson" href="/api/domain-listings.ndjson" title="Domain Listings Feed" />
+    <link rel="help" href="/data/domain-listings" title="Machine-readable domain feeds" />
     <link rel="stylesheet" href="/assets/app.css?v=dev7" />
   </head>
   <body class="snatch-app domainPage candidate-detail-page candidate-detail-page--canonical">

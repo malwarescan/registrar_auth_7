@@ -31,7 +31,14 @@ function resolveDomainLastmod(record) {
 }
 
 function getCoreSitemapPaths() {
-  return ["/", "/experiments/intent-fetch/", "/methodology/"];
+  return [
+    "/",
+    "/experiments/intent-fetch/",
+    "/methodology/",
+    "/data/domain-listings",
+    "/data/domain-feed",
+    "/data/domain-graph",
+  ];
 }
 
 function getIntentSitemapPaths() {

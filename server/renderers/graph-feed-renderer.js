@@ -3,13 +3,24 @@ const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
 function nodeTypeForSchemaType(schemaType, nodeId = "") {
   if (schemaType === "Product" && nodeId.includes("#comparable-")) return "ComparableDomain";
-  if (schemaType === "Product") return "DomainProduct";
+  if (schemaType === "Product") return "Domain";
   if (schemaType === "Offer") return "Offer";
   if (schemaType === "Organization" && nodeId.includes("#provider-")) return "Provider";
   if (schemaType === "DefinedTerm" && nodeId.includes("#category-")) return "Category";
   if (schemaType === "DefinedTerm" && nodeId.includes("#use-case-")) return "UseCase";
   if (schemaType === "DefinedTerm" && nodeId.includes("#tld")) return "TLD";
   return null;
+}
+
+function pushNode(nodes, seen, node) {
+  if (!node?.id || seen.has(node.id)) return;
+  seen.add(node.id);
+  nodes.push(node);
+}
+
+function pushEdge(edges, edge) {
+  if (!edge?.from || !edge?.to || !edge?.type) return;
+  edges.push(edge);
 }
 
 function buildGraphFeedRecord(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
@@ -19,10 +30,58 @@ function buildGraphFeedRecord(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL)
   if (!graphPayload?.["@graph"]) return null;
 
   const canonicalUrl = graphPayload.canonicalUrl;
-  const domainNodeId = `${canonicalUrl}#product`;
+  const domainNodeId = `${canonicalUrl}#domain`;
   const nodes = [];
   const edges = [];
   const seenNodeIds = new Set();
+
+  pushNode(nodes, seenNodeIds, {
+    type: "Domain",
+    id: domainNodeId,
+    name: record.domain,
+    url: canonicalUrl,
+    slug: record.slug,
+    status: record.status,
+    seoTier: record.seoTier,
+  });
+
+  const auctionUrl =
+    record.acquisitionPath?.actionUrl || record.auctionUrl || record.acquisitionPath?.url || null;
+  if (auctionUrl) {
+    const auctionNodeId = `${canonicalUrl}#auction`;
+    pushNode(nodes, seenNodeIds, {
+      type: "Auction",
+      id: auctionNodeId,
+      name: `${record.domain} auction`,
+      url: auctionUrl,
+      provider: record.provider || "NameSilo",
+      currentBid: record.currentBid ?? record.acquisitionPath?.currentBid ?? null,
+      bidCount: record.bidCount ?? record.acquisitionPath?.bidCount ?? 0,
+      endsAt: record.auctionEndsAt ?? record.acquisitionPath?.auctionEndsAt ?? null,
+    });
+    pushEdge(edges, { type: "listedInAuction", from: domainNodeId, to: auctionNodeId });
+  }
+
+  (record.categoryGuesses || []).forEach((label, index) => {
+    const categoryId = `${metadataBaseUrl}/categories/${encodeURIComponent(String(label).toLowerCase().replace(/\s+/g, "-"))}#category`;
+    pushNode(nodes, seenNodeIds, { type: "Category", id: categoryId, name: label });
+    pushNode(nodes, seenNodeIds, {
+      type: "Intent",
+      id: `${categoryId}-intent`,
+      name: label,
+    });
+    pushEdge(edges, { type: "inCategory", from: domainNodeId, to: categoryId });
+    pushEdge(edges, { type: "hasIntent", from: domainNodeId, to: `${categoryId}-intent` });
+  });
+
+  (record.buyerUseCases || []).forEach((label, index) => {
+    const useCaseId = `${canonicalUrl}#use-case-${index + 1}`;
+    const personaId = `${metadataBaseUrl}/personas/${encodeURIComponent(String(label).toLowerCase().replace(/\s+/g, "-"))}#persona`;
+    pushNode(nodes, seenNodeIds, { type: "UseCase", id: useCaseId, name: label });
+    pushNode(nodes, seenNodeIds, { type: "Persona", id: personaId, name: label });
+    pushEdge(edges, { type: "supportsUseCase", from: domainNodeId, to: useCaseId });
+    pushEdge(edges, { type: "targetsPersona", from: domainNodeId, to: personaId });
+  });
 
   for (const node of graphPayload["@graph"]) {
     const schemaType = node["@type"];
@@ -30,10 +89,9 @@ function buildGraphFeedRecord(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL)
     if (!schemaType || !nodeId) continue;
 
     const feedType = nodeTypeForSchemaType(schemaType, nodeId);
-    if (!feedType) continue;
+    if (!feedType || feedType === "Domain") continue;
 
-    seenNodeIds.add(nodeId);
-    nodes.push({
+    pushNode(nodes, seenNodeIds, {
       type: feedType,
       id: nodeId,
       name: node.name || record.domain,
@@ -51,21 +109,21 @@ function buildGraphFeedRecord(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL)
     });
 
     if (feedType === "Offer") {
-      edges.push({ type: "hasOffer", from: domainNodeId, to: nodeId });
+      pushEdge(edges, { type: "hasOffer", from: domainNodeId, to: nodeId });
       const providerId = `${metadataBaseUrl}/#provider-namesilo`;
-      if (node.seller?.["@id"]) {
-        edges.push({ type: "soldBy", from: nodeId, to: node.seller["@id"] });
-      } else {
-        edges.push({ type: "soldBy", from: nodeId, to: providerId });
-      }
+      pushEdge(edges, {
+        type: "soldBy",
+        from: nodeId,
+        to: node.seller?.["@id"] || providerId,
+      });
     }
 
     if (feedType === "Category" || feedType === "UseCase" || feedType === "TLD" || feedType === "ComparableDomain") {
-      edges.push({ type: "relatedTo", from: domainNodeId, to: nodeId });
+      pushEdge(edges, { type: "relatedTo", from: domainNodeId, to: nodeId });
     }
 
     if (feedType === "Provider") {
-      edges.push({ type: "listedWith", from: domainNodeId, to: nodeId });
+      pushEdge(edges, { type: "listedWith", from: domainNodeId, to: nodeId });
     }
   }
 

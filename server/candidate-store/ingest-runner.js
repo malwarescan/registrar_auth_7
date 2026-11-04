@@ -104,9 +104,15 @@ async function fetchNameSiloAuctionRawPage({ apiKey, fetchFn = fetch, page = 1, 
     method: "GET",
     headers: { Accept: "application/json" },
   });
-  const payload = await response.json();
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error(`NameSilo listAuctions page ${page}: HTTP ${response.status}, response was not JSON.`);
+  }
   if (!response.ok || String(payload?.reply?.code || "") !== "300") {
-    throw new Error(payload?.reply?.detail || "NameSilo auction ingest failed.");
+    const detail = payload?.reply?.detail || "NameSilo auction ingest failed.";
+    throw new Error(`${detail} (page ${page}, HTTP ${response.status}, code ${payload?.reply?.code ?? "none"})`);
   }
   return extractAuctionRecords(payload);
 }

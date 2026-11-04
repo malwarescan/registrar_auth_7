@@ -249,7 +249,10 @@ async function refreshAuctionStoreFromApi(options = {}) {
     lastRefreshError = null;
     return { ok: true, meta };
   } catch (error) {
-    lastRefreshError = { at: new Date().toISOString(), message: error instanceof Error ? error.message : String(error) };
+    // Never let the key leak into logs or /health through an error message.
+    const raw = error instanceof Error ? error.message : String(error);
+    const message = (options.apiKey ? raw.split(options.apiKey).join("[key]") : raw).slice(0, 300);
+    lastRefreshError = { at: new Date().toISOString(), message };
     return { ok: false, error: lastRefreshError, meta: currentMeta };
   }
 }

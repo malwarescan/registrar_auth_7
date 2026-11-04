@@ -378,6 +378,7 @@ const server = http.createServer(async (req, res) => {
             indexable: auctionData.indexedCount,
             liveRefresh: Boolean(process.env.NAMESILO_API_KEY),
             lastRefreshError: refreshError ? refreshError.at : null,
+            lastRefreshErrorMessage: refreshError ? refreshError.message : null,
           }
         : null,
     });

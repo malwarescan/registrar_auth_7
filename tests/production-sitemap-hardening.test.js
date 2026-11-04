@@ -8,6 +8,7 @@ const {
   buildIndexedDomainSitemap,
   resolveDomainLastmod,
   SITEMAP_INDEX_CHILDREN,
+  resolveSitemapResponse,
 } = require("../server/sitemap");
 const {
   configureStorePaths,
@@ -73,8 +74,11 @@ test("production sitemap index references core intents and indexed domain sitema
     "/sitemap-intents.xml",
     "/sitemap-domains-indexed.xml",
   ]);
-  for (const child of SITEMAP_INDEX_CHILDREN) {
-    assert.match(xml, new RegExp(child.replace(/\./g, "\\.")));
+  const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => new URL(match[1]).pathname);
+  assert.ok(locs.includes("/sitemap-core.xml"));
+  for (const loc of locs) {
+    assert.ok(SITEMAP_INDEX_CHILDREN.includes(loc), `unexpected child ${loc}`);
+    assert.match(resolveSitemapResponse(loc, { isProduction: true }), /<url>/, `${loc} is listed but empty`);
   }
   assert.doesNotMatch(xml, /sitemap-domains-archive/);
 });

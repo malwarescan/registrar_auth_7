@@ -98,26 +98,33 @@ ${nodes}
 </sitemapindex>`;
 }
 
+// Search Console reports an error for a child sitemap with no URLs, so the
+// index only lists children that currently have entries.
 function buildSitemapIndex(options = {}) {
   const now = formatLastmod(new Date().toISOString());
-  const entries = SITEMAP_INDEX_CHILDREN.map((pathname) => ({
-    pathname: toAbsolutePublicUrl(pathname, options),
-    lastmod: now,
-  }));
+  const entries = SITEMAP_INDEX_CHILDREN
+    .filter((pathname) => CHILD_ENTRY_BUILDERS[pathname](options).length > 0)
+    .map((pathname) => ({
+      pathname: toAbsolutePublicUrl(pathname, options),
+      lastmod: now,
+    }));
   return buildSitemapIndexXml(entries);
 }
 
-function buildCoreSitemap(options = {}) {
-  const entries = getCoreSitemapPaths().map((pathname) => ({
+function buildCoreSitemapEntries(options = {}) {
+  return getCoreSitemapPaths().map((pathname) => ({
     pathname: toAbsolutePublicUrl(pathname, options),
     changefreq: "monthly",
-    priority: pathname === "/" ? "0.8" : "0.8",
+    priority: "0.8",
   }));
-  return buildUrlsetXml(entries);
 }
 
-function buildIntentSitemap(options = {}) {
-  const entries = listPublishedIntents()
+function buildCoreSitemap(options = {}) {
+  return buildUrlsetXml(buildCoreSitemapEntries(options));
+}
+
+function buildIntentSitemapEntries(options = {}) {
+  return listPublishedIntents()
     .map((intent) => {
       const slug = String(intent.slug || intent.intentSlug || "").trim();
       if (!slug) return null;
@@ -129,12 +136,15 @@ function buildIntentSitemap(options = {}) {
       };
     })
     .filter(Boolean);
-  return buildUrlsetXml(entries);
 }
 
-function buildIndexedDomainSitemap(options = {}) {
+function buildIntentSitemap(options = {}) {
+  return buildUrlsetXml(buildIntentSitemapEntries(options));
+}
+
+function buildIndexedDomainSitemapEntries(options = {}) {
   const metadataBaseUrl = options.metadataBaseUrl || toAbsolutePublicUrl("/", options).replace(/\/$/, "");
-  const entries = listSitemapCandidates({ metadataBaseUrl })
+  return listSitemapCandidates({ metadataBaseUrl })
     .map((record) => {
       if (!record.slug) return null;
       const pathname = `/domains/${record.slug}`;
@@ -147,8 +157,17 @@ function buildIndexedDomainSitemap(options = {}) {
       };
     })
     .filter(Boolean);
-  return buildUrlsetXml(entries);
 }
+
+function buildIndexedDomainSitemap(options = {}) {
+  return buildUrlsetXml(buildIndexedDomainSitemapEntries(options));
+}
+
+const CHILD_ENTRY_BUILDERS = {
+  "/sitemap-core.xml": buildCoreSitemapEntries,
+  "/sitemap-intents.xml": buildIntentSitemapEntries,
+  "/sitemap-domains-indexed.xml": buildIndexedDomainSitemapEntries,
+};
 
 function buildSitemapXml(options = {}) {
   return buildSitemapIndex(options);

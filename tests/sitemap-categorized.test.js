@@ -11,6 +11,7 @@ const {
   getCoreSitemapPaths,
   getIndexedDomainSitemapPaths,
   SITEMAP_INDEX_CHILDREN,
+  resolveSitemapResponse,
 } = require("../server/sitemap");
 const {
   configureStorePaths,
@@ -58,10 +59,19 @@ test("sitemap index lists sub-sitemaps only", () => {
     assert.match(loc, /\.xml$/);
     assert.doesNotMatch(loc, /\/experiments\//);
   }
-  for (const child of SITEMAP_INDEX_CHILDREN) {
-    assert.match(xml, new RegExp(child.replace(".", "\\.")));
+  assert.match(xml, /sitemap-core\.xml/);
+  for (const loc of locs) {
+    assert.ok(SITEMAP_INDEX_CHILDREN.includes(new URL(loc).pathname), `unexpected child ${loc}`);
   }
-  assert.equal((xml.match(/<sitemap>/g) || []).length, 3);
+});
+
+test("sitemap index omits child sitemaps with no URLs", () => {
+  const xml = buildSitemapIndex({ port: 4173, isProduction: false });
+  for (const child of SITEMAP_INDEX_CHILDREN) {
+    const childXml = resolveSitemapResponse(child, { port: 4173, isProduction: false });
+    const listed = xml.includes(child);
+    assert.equal(listed, /<url>/.test(childXml), `${child} listed=${listed} but has URLs=${!listed}`);
+  }
 });
 
 test("core sitemap contains core URLs in urlset", () => {

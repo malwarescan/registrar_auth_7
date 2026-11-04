@@ -126,13 +126,17 @@ function median(sorted) {
 
 // Market figures over the auctions loaded on the site, as they stood at fetch
 // time (names removed by the brand-safety filter are not counted).
-function computeAuctionStats(auctions) {
+function computeAuctionStats(auctions, fetchedAt = null) {
   if (!auctions.length) return null;
+  const fetchedMs = fetchedAt ? new Date(fetchedAt).getTime() : null;
+  // The API occasionally lists an auction whose end time has already passed;
+  // the end-time range covers only auctions still running at fetch time.
+  const runningAtFetch = fetchedMs === null ? auctions : auctions.filter((a) => !a.auctionEndsAt || new Date(a.auctionEndsAt).getTime() > fetchedMs);
   const bids = auctions.map((a) => a.bidCount || 0);
   const withBids = auctions.filter((a) => (a.bidCount || 0) > 0);
   const opening = auctions.map((a) => a.openingBid ?? a.currentBid).filter(Number.isFinite).sort((a, b) => a - b);
   const bidPrices = withBids.map((a) => a.currentBid).filter(Number.isFinite).sort((a, b) => a - b);
-  const ends = auctions.map((a) => a.auctionEndsAt).filter(Boolean).sort();
+  const ends = runningAtFetch.map((a) => a.auctionEndsAt).filter(Boolean).sort();
   const tldCounts = {};
   auctions.forEach((a) => {
     tldCounts[a.tld] = (tldCounts[a.tld] || 0) + 1;
@@ -140,6 +144,7 @@ function computeAuctionStats(auctions) {
   const minOpening = opening[0] ?? null;
   return {
     total: auctions.length,
+    runningAtFetch: runningAtFetch.length,
     zeroBids: auctions.length - withBids.length,
     withBids: withBids.length,
     maxBidCount: Math.max(...bids),
@@ -217,7 +222,7 @@ function buildAuctionStore(rawAuctions, options = {}) {
     loadedCount: list.length,
     indexedCount: indexed.size,
     excluded,
-    stats: computeAuctionStats(valid),
+    stats: computeAuctionStats(valid, fetchedAt),
   };
   return { records, meta };
 }

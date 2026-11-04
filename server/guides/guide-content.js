@@ -374,7 +374,7 @@ const GUIDES = [
     question: "Should I bid on a domain with a low bid count?",
     title: "Should I Bid on a Domain With a Low Bid Count? A Decision Guide",
     description:
-      "A low bid count is normal for expired-domain auctions and is not a warning sign by itself. See bid counts across every active NameSilo expired-domain auction in our latest data, then use a short checklist to decide whether a quiet auction is a bargain or a pass.",
+      "A low bid count is normal for expired-domain auctions and is not a warning sign by itself. See bid counts across the NameSilo expired-domain auctions in our latest data, then use a short checklist to decide whether a quiet auction is a bargain or a pass.",
     answer: [
       "Yes, if the domain passes your own checks and fits a real use. A low bid count is normal in expired-domain auctions, where most names get no bids at all, so it tells you little about quality by itself. What it does tell you is that you are unlikely to face a bidding war, so bid what the name is worth to you and no more.",
       "The risk is not the bid count; it is buying a name nobody wants for a good reason, such as spam history or a trademark problem.",

@@ -58,7 +58,7 @@ function renderOpeningBidSection(meta, label) {
       : "";
   return `<section class="guide-section guide-data">
         <h2>What opening bids look like in our latest data</h2>
-        <p>These figures cover every active NameSilo expired-domain auction in the data we fetched on ${escapeHtml(label.fetchedLabel)}: ${stats.total.toLocaleString("en-US")} auctions (the data is described in full in the <a href="/guides/should-i-bid-on-a-domain-with-low-bid-count">low bid count guide</a>). Only ${stats.withBids.toLocaleString("en-US")} had any bids at that point, so almost all of these amounts are starting prices, not prices anyone agreed to pay.${label.stale ? " Every one of these auctions has since closed." : ""}</p>
+        <p>These figures cover all ${stats.total.toLocaleString("en-US")} NameSilo expired-domain auctions in the data we fetched on ${escapeHtml(label.fetchedLabel)} (the data is described in full in the <a href="/guides/should-i-bid-on-a-domain-with-low-bid-count">low bid count guide</a>). Only ${stats.withBids.toLocaleString("en-US")} had any bids at that point, so almost all of these amounts are starting prices, not prices anyone agreed to pay.${label.stale ? " Every one of these auctions has since closed." : ""}</p>
         <table>
           <thead><tr><th>Bid</th><th>Amount</th></tr></thead>
           <tbody>

@@ -225,14 +225,27 @@ test("a successful API refresh pages through results and replaces the store", as
     assert.equal(params.get("typeId"), "3");
     return { ok: true, json: async () => ({ reply: { code: 300, body: pages[params.get("page")] || [] } }) };
   };
-  const all = await fetchAllNameSiloAuctions({ apiKey: "x", fetchFn, pageSize: 2 });
+  const all = await fetchAllNameSiloAuctions({ apiKey: "x", fetchFn, pageSize: 2, pageDelayMs: 0 });
   assert.equal(all.length, 3);
   assert.deepEqual(calls, ["1", "2"]);
-  const result = await refreshAuctionStoreFromApi({ apiKey: "x", fetchFn, pageSize: 2, now: NOW });
+  const result = await refreshAuctionStoreFromApi({ apiKey: "x", fetchFn, pageSize: 2, pageDelayMs: 0, now: NOW });
   assert.equal(result.ok, true);
   assert.equal(result.meta.origin, "namesilo-api");
   assert.equal(result.meta.loadedCount, 3);
   assert.ok(getDurableCandidateBySlug("cottagebar-com"));
+});
+
+test("a rate-limited page is retried instead of failing the whole refresh", async () => {
+  let calls = 0;
+  const fetchFn = async (url) => {
+    calls += 1;
+    if (calls === 1) return { ok: false, status: 429, json: async () => { throw new Error("not json"); } };
+    const page = new URL(url).searchParams.get("page");
+    return { ok: true, status: 200, json: async () => ({ reply: { code: 300, body: page === "1" ? [raw("kettleskin.com")] : [] } }) };
+  };
+  const all = await fetchAllNameSiloAuctions({ apiKey: "x", fetchFn, pageSize: 5, pageDelayMs: 0, retry: { baseMs: 1 } });
+  assert.equal(all.length, 1);
+  assert.equal(calls, 3, "429, then page 1 again, then an empty page 2");
 });
 
 test("hubs stay indexable while auctions churn; empty sub-hubs are noindex", () => {

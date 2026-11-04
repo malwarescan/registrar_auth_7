@@ -24,6 +24,33 @@ const SNAPSHOT_SOURCE = "NameSilo API listAuctions (statusId=2 active, typeId=3 
 const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const API_PAGE_SIZE = 200;
 const API_MAX_PAGES = 400;
+// NameSilo rate-limits listAuctions (HTTP 429 after ~90 quick calls), so pages
+// are spaced out and a rate-limited page is retried with backoff.
+const API_PAGE_DELAY_MS = 400;
+const API_MAX_RETRIES = 6;
+const API_RETRY_BASE_MS = 5000;
+
+function wait(ms) {
+  return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
+}
+
+async function fetchPageWithRetry(options, retry = {}) {
+  const maxRetries = retry.maxRetries ?? API_MAX_RETRIES;
+  const baseMs = retry.baseMs ?? API_RETRY_BASE_MS;
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await fetchNameSiloAuctionRawPage(options);
+    } catch (error) {
+      // Rate limits, server errors and network failures (no HTTP status) are
+      // retried; an API refusal such as a bad key is not.
+      const networkError = !error || typeof error !== "object" || !("status" in error);
+      const retryable = networkError || error.status === 429 || error.status >= 500;
+      if (!retryable || attempt >= maxRetries) throw error;
+      const backoff = error?.retryAfter ? error.retryAfter * 1000 : baseMs * 2 ** attempt;
+      await wait(Math.min(backoff, 120000));
+    }
+  }
+}
 
 let currentMeta = null;
 let lastRefreshError = null;
@@ -218,13 +245,21 @@ function loadCommittedSnapshot(options = {}) {
   );
 }
 
-async function fetchAllNameSiloAuctions({ apiKey, fetchFn = fetch, pageSize = API_PAGE_SIZE, maxPages = API_MAX_PAGES } = {}) {
+async function fetchAllNameSiloAuctions({
+  apiKey,
+  fetchFn = fetch,
+  pageSize = API_PAGE_SIZE,
+  maxPages = API_MAX_PAGES,
+  pageDelayMs = API_PAGE_DELAY_MS,
+  retry = {},
+} = {}) {
   if (!apiKey) throw new Error("Missing NameSilo API key.");
   const all = [];
   const seen = new Set();
   let fullPage = null;
   for (let page = 1; page <= maxPages; page += 1) {
-    const raw = await fetchNameSiloAuctionRawPage({ apiKey, fetchFn, page, pageSize });
+    if (page > 1) await wait(pageDelayMs);
+    const raw = await fetchPageWithRetry({ apiKey, fetchFn, page, pageSize }, retry);
     const fresh = raw.filter((item) => item?.domain && !seen.has(String(item.domain).toLowerCase()));
     fresh.forEach((item) => seen.add(String(item.domain).toLowerCase()));
     all.push(...fresh);

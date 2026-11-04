@@ -28,7 +28,7 @@ const {
   getIntent,
   parseIntentPageContext,
 } = require("./server/domain-fetch/intent-session");
-const { getMetadataBaseUrl } = require("./server/public-url");
+const { getMetadataBaseUrl, toPublicMetadataUrl } = require("./server/public-url");
 const {
   injectHomeDiscovery,
   renderFeedLandingPage,
@@ -146,6 +146,24 @@ function patchHtmlAssetVersions(html) {
   );
 }
 
+// Static HTML pages that are listed in the sitemap, keyed by normalized request
+// pathname (trailing slash stripped) -> canonical path as listed in the sitemap.
+const STATIC_CANONICAL_PATHS = {
+  "/": "/",
+  "/experiments/intent-fetch": "/experiments/intent-fetch/",
+  "/methodology": "/methodology/",
+};
+
+function injectCanonicalLink(html, requestPathname) {
+  const normalized = safePathname(requestPathname || "/").replace(/\/+$/, "") || "/";
+  const canonicalPath = STATIC_CANONICAL_PATHS[normalized];
+  if (!canonicalPath || /<link[^>]+rel=["']canonical["']/i.test(html) || !html.includes("</head>")) {
+    return html;
+  }
+  const href = escapeHtml(toPublicMetadataUrl(canonicalPath, { port: PORT, isProduction: IS_PRODUCTION }));
+  return html.replace("</head>", `    <link rel="canonical" href="${href}" />\n  </head>`);
+}
+
 function staticResponseHeaders(ext) {
   const headers = { "Content-Type": MIME_TYPES[ext] || "application/octet-stream" };
   if (!IS_PRODUCTION && [".html", ".css", ".js"].includes(ext)) {
@@ -194,7 +212,7 @@ function serveStatic(req, res, requestUrl) {
     }
     const headers = staticResponseHeaders(ext);
     if (ext === ".html") {
-      const html = patchHtmlAssetVersions(content.toString("utf8"));
+      const html = injectCanonicalLink(patchHtmlAssetVersions(content.toString("utf8")), requestUrl.pathname);
       res.writeHead(200, headers);
       res.end(html);
       return;
@@ -488,16 +506,19 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && (pathname === "/experiments/intent-fetch" || pathname === "/")) {
+  if ((req.method === "GET" || req.method === "HEAD") && (pathname === "/experiments/intent-fetch" || pathname === "/")) {
     const metadataBaseUrl = getMetadataBaseUrl({ port: PORT, isProduction: IS_PRODUCTION });
     const filePath =
       pathname === "/"
         ? path.join(ROOT, "index.html")
         : path.join(ROOT, "experiments", "intent-fetch", "index.html");
     if (fs.existsSync(filePath)) {
-      const html = injectHomeDiscovery(patchHtmlAssetVersions(fs.readFileSync(filePath, "utf8")), metadataBaseUrl);
+      const html = injectCanonicalLink(
+        injectHomeDiscovery(patchHtmlAssetVersions(fs.readFileSync(filePath, "utf8")), metadataBaseUrl),
+        pathname
+      );
       res.writeHead(200, staticResponseHeaders(".html"));
-      res.end(html);
+      res.end(req.method === "HEAD" ? undefined : html);
       return;
     }
   }

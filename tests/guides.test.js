@@ -139,6 +139,11 @@ test("homepage has a descriptive title, meta description and guide links", () =>
   assert.match(title, /Expired Domain Auctions/);
   assert.match(html, /<meta name="description" content="[^"]{80,}" \/>/);
   assert.match(html, /href="\/guides"/);
+  // The homepage is a real landing page, not a redirect stub.
+  assert.doesNotMatch(html, /http-equiv="refresh"/i);
+  assert.doesNotMatch(html, /location\.replace/);
+  assert.match(html, /<h1>/);
+  assert.match(html, /href="\/experiments\/intent-fetch\/"/);
   const intentFetch = fs.readFileSync(path.join(ROOT, "experiments", "intent-fetch", "index.html"), "utf8");
   assert.match(intentFetch, /href="\/guides"/);
 });

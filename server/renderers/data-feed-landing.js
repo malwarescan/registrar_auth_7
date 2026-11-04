@@ -322,6 +322,10 @@ function renderFeedLandingPage(pageKey, metadataBaseUrl = DEFAULT_PUBLIC_BASE_UR
         <h2>Related feeds</h2>
         <div class="feed-links">${relatedLinks}</div>
       </section>
+      <section class="feed-section">
+        <h2>Buying guides</h2>
+        <div class="feed-links"><a class="feed-link" href="/guides">Expired domain auction guides</a></div>
+      </section>
     </main>
   </body>
 </html>`;

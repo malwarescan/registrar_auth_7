@@ -1,6 +1,7 @@
 const { listPublishedIntents } = require("./published-catalog");
 const { listSitemapCandidates } = require("./candidate-store/durable-candidates");
 const { toAbsolutePublicUrl } = require("./public-url");
+const { listGuideSlugs } = require("./guides/guide-content");
 
 const SITEMAP_INDEX_CHILDREN = [
   "/sitemap-core.xml",
@@ -38,6 +39,8 @@ function getCoreSitemapPaths() {
     "/data/domain-listings",
     "/data/domain-feed",
     "/data/domain-graph",
+    "/guides",
+    ...listGuideSlugs().map((slug) => `/guides/${slug}`),
   ];
 }
 

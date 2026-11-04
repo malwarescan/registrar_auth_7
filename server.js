@@ -40,6 +40,7 @@ const { configureDefaultProductStore } = require("./server/candidate-store/store
 const { buildRobotsTxt, resolveSitemapResponse } = require("./server/sitemap");
 const { renderSnatchLogoAnchor } = require("./server/snatch-logo-markup");
 const { renderCandidatePageHtml } = require("./server/candidate-detail-page");
+const { renderGuidePage, renderGuidesIndexPage, resolveGuideRoute } = require("./server/renderers/guides-renderer");
 const { resolveLocalProductAssetPath } = require("./server/product-asset");
 
 const ROOT = path.resolve(__dirname);
@@ -473,6 +474,18 @@ const server = http.createServer(async (req, res) => {
       res.end(html);
       return;
     }
+  }
+
+  const guideRoute = resolveGuideRoute(pathname);
+  if ((req.method === "GET" || req.method === "HEAD") && guideRoute) {
+    const metadataBaseUrl = getMetadataBaseUrl({ port: PORT, isProduction: IS_PRODUCTION });
+    const html =
+      guideRoute.type === "index"
+        ? renderGuidesIndexPage(metadataBaseUrl)
+        : renderGuidePage(guideRoute.slug, metadataBaseUrl);
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" });
+    res.end(req.method === "HEAD" ? undefined : html);
+    return;
   }
 
   if (req.method === "GET" && (pathname === "/experiments/intent-fetch" || pathname === "/")) {

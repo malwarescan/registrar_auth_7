@@ -35,7 +35,6 @@ const {
   renderDataHubPage,
   resolveFeedLandingKey,
 } = require("./server/renderers/data-feed-landing");
-const { listPublishedCandidates } = require("./server/published-catalog");
 const { resolveDomainPage } = require("./server/candidate-store/resolve-domain-page");
 const { configureDefaultProductStore } = require("./server/candidate-store/store-paths");
 const { buildRobotsTxt, resolveSitemapResponse } = require("./server/sitemap");
@@ -46,6 +45,8 @@ const { renderMethodologyPage, renderAboutPage } = require("./server/renderers/s
 const { resolveUrlVariant } = require("./server/url-variants");
 const { renderCandidatePageHtml } = require("./server/candidate-detail-page");
 const { renderGuidePage, renderGuidesIndexPage, resolveGuideRoute } = require("./server/renderers/guides-renderer");
+const { renderAuctionHubPage, resolveAuctionHubRoute } = require("./server/renderers/auction-hubs");
+const { startAuctionRefreshLoop, getAuctionDataMeta, getLastRefreshError } = require("./server/candidate-store/auction-snapshot");
 const { resolveLocalProductAssetPath } = require("./server/product-asset");
 
 const ROOT = path.resolve(__dirname);
@@ -84,7 +85,7 @@ if (!IS_PRODUCTION) {
   ENV_FILES.forEach(loadEnvFile);
 }
 const PORT = Number(process.env.PORT || (IS_PRODUCTION ? 8080 : 4173));
-configureDefaultProductStore();
+const storeMode = configureDefaultProductStore();
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -113,10 +114,6 @@ function escapeHtml(input) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-}
-
-function renderSnatchHeader() {
-  return renderSiteHeader(null);
 }
 
 // Static HTML pages carry {{SITE_NAME}} tokens and header/footer markers so the
@@ -367,10 +364,22 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && pathname === "/health") {
+    const auctionData = getAuctionDataMeta();
+    const refreshError = getLastRefreshError();
     sendJson(res, 200, {
       ok: true,
       service: "snatch-auction",
       timestamp: new Date().toISOString(),
+      auctionData: auctionData
+        ? {
+            origin: auctionData.origin,
+            fetchedAt: auctionData.fetchedAt,
+            loaded: auctionData.loadedCount,
+            indexable: auctionData.indexedCount,
+            liveRefresh: Boolean(process.env.NAMESILO_API_KEY),
+            lastRefreshError: refreshError ? refreshError.at : null,
+          }
+        : null,
     });
     return;
   }
@@ -429,21 +438,6 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "GET" && pathname === "/out/acquire") {
     await handleOutAcquire(req, res, requestUrl, { apiKey: process.env.NAMESILO_API_KEY });
-    return;
-  }
-
-  if (req.method === "GET" && pathname === "/domains") {
-    const published = listPublishedCandidates();
-    const items = published
-      .slice(0, 120)
-      .map((entry) => {
-        const slug = entry.slug || String(entry.domain || "").replace(/\./g, "-");
-        const domain = entry.domain || slug.replace(/-/g, ".");
-        return `<li><a href="/domains/${escapeHtml(slug)}">${escapeHtml(domain)}</a></li>`;
-      })
-      .join("");
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="robots" content="noindex,follow"/><title>Domain listings | ${escapeHtml(SITE_NAME)}</title><link rel="stylesheet" href="/assets/app.css?v=dev5"/><style>body{margin:0;background:#f8f7f4}${SITE_CHROME_STYLES}</style></head><body class="snatch-app">${renderSnatchHeader()}<main class="domainPageMain"><div class="snatchRail" style="padding-top:24px;"><h1>Domain listings</h1><ul>${items || "<li>No published domain candidates yet.</li>"}</ul></div></main></body></html>`);
     return;
   }
 
@@ -564,6 +558,16 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  const hubRoute = resolveAuctionHubRoute(pathname);
+  if ((req.method === "GET" || req.method === "HEAD") && hubRoute) {
+    const metadataBaseUrl = getMetadataBaseUrl({ port: PORT, isProduction: IS_PRODUCTION });
+    const html = renderAuctionHubPage(hubRoute.slug, metadataBaseUrl);
+    if (html) {
+      sendHtml(req, res, 200, html, { "Cache-Control": "public, max-age=300" });
+      return;
+    }
+  }
+
   const guideRoute = resolveGuideRoute(pathname);
   if ((req.method === "GET" || req.method === "HEAD") && guideRoute) {
     const metadataBaseUrl = getMetadataBaseUrl({ port: PORT, isProduction: IS_PRODUCTION });
@@ -642,8 +646,20 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   const assetVersion = getIntentFetchAssetVersion();
+  const auctionData = getAuctionDataMeta();
   process.stdout.write(
     `Domain Fetch Lab server running on http://localhost:${PORT}\n` +
-      `Intent Fetch assets version: ${assetVersion} (auto cache-bust in dev)\n`
+      `Intent Fetch assets version: ${assetVersion} (auto cache-bust in dev)\n` +
+      `Product store: ${storeMode}${auctionData ? ` (${auctionData.loadedCount} auctions fetched ${auctionData.fetchedAt}, ${auctionData.indexedCount} indexable)` : ""}\n`
   );
+  // With NAMESILO_API_KEY set, replace the committed snapshot with live data
+  // now and every 6 hours; a failed refresh keeps the last good data.
+  if (process.env.NAMESILO_API_KEY && process.env.DISABLE_AUCTION_REFRESH !== "true") {
+    startAuctionRefreshLoop({
+      apiKey: process.env.NAMESILO_API_KEY,
+      log: (line) => process.stdout.write(`${line}\n`),
+    });
+  } else {
+    process.stdout.write("NAMESILO_API_KEY not set: serving the committed auction snapshot; auctions turn ended/noindex as their end times pass.\n");
+  }
 });

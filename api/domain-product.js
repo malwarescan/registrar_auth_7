@@ -48,6 +48,47 @@ function buildRequestPath(pathname, query = {}) {
   return qs ? `${pathname}?${qs}` : pathname;
 }
 
+// Writes one NDJSON line per record, rendering each only when it is written
+// and waiting for the socket to drain, so a 30,000-record export never sits in
+// memory as one large string.
+async function streamNdjson(res, records, render) {
+  try {
+    await writeNdjsonLines(res, records, render);
+  } catch {
+    if (typeof res.destroy === "function") res.destroy();
+  }
+}
+
+async function writeNdjsonLines(res, records, render) {
+  for (const record of records) {
+    const entry = render(record);
+    if (!entry) continue;
+    // Lines are written synchronously until the socket reports a full buffer.
+    if (res.write(`${JSON.stringify(entry)}\n`) === false && typeof res.once === "function") {
+      await new Promise((resolve) => {
+        const done = () => {
+          res.removeListener("drain", done);
+          res.removeListener("close", done);
+          resolve();
+        };
+        res.once("drain", done);
+        res.once("close", done);
+      });
+      if (res.destroyed) return;
+    }
+  }
+  res.end();
+}
+
+function previewLines(records, render) {
+  return records
+    .slice(0, FEED_PREVIEW_LINES * 2)
+    .map(render)
+    .filter(Boolean)
+    .slice(0, FEED_PREVIEW_LINES)
+    .map((entry) => JSON.stringify(entry));
+}
+
 function sendFeedBrowsePage(res, options) {
   sendHtmlFeedHeaders(res);
   res.end(renderFeedBrowsePage(options));
@@ -81,7 +122,7 @@ function handleDomainFeedNdjson(req, res, options = {}) {
   const feedOptions = resolveNdjsonFeedOptions(query);
   const records = listDurableCandidates({ limit: feedOptions.limit });
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
-  const lines = renderDomainFeedNdjson(records, metadataBaseUrl).map((entry) => JSON.stringify(entry));
+  const render = (record) => renderDomainFeedNdjson([record], metadataBaseUrl)[0];
   const requestPath = buildRequestPath("/api/domain-feed.ndjson", query);
 
   if (wantsHtmlFeedPreview(req, query)) {
@@ -89,8 +130,8 @@ function handleDomainFeedNdjson(req, res, options = {}) {
       title: "Domain Catalog Feed",
       description: "Full durable catalog NDJSON export with graph payloads.",
       requestPath,
-      lineCount: lines.length,
-      previewLines: lines.slice(0, FEED_PREVIEW_LINES),
+      lineCount: records.length,
+      previewLines: previewLines(records, render),
       links: [
         { href: `${requestPath}${requestPath.includes("?") ? "&" : "?"}view=raw`, label: "View raw NDJSON" },
         { href: "/api/domain-feed.json?limit=1000&raw=1", label: "View JSON" },
@@ -100,8 +141,7 @@ function handleDomainFeedNdjson(req, res, options = {}) {
   }
 
   sendNdjsonFeedHeaders(res, req, query);
-  for (const line of lines) res.write(`${line}\n`);
-  res.end();
+  return streamNdjson(res, records, render);
 }
 
 function handleDomainFeedJson(req, res, options = {}) {
@@ -148,10 +188,7 @@ function handleDomainListingsNdjson(req, res, options = {}) {
   if (feedOptions.limit !== null) {
     records = records.slice(0, feedOptions.limit);
   }
-  const lines = records
-    .map((record) => renderDomainListingRecord(record, metadataBaseUrl))
-    .filter(Boolean)
-    .map((entry) => JSON.stringify(entry));
+  const render = (record) => renderDomainListingRecord(record, metadataBaseUrl);
   const requestPath = buildRequestPath("/api/domain-listings.ndjson", query);
 
   if (wantsHtmlFeedPreview(req, query)) {
@@ -159,8 +196,8 @@ function handleDomainListingsNdjson(req, res, options = {}) {
       title: "Domain Listings Feed",
       description: `Expired-domain auction listings feed (scope=${scope}). Each record shows whether its auction is running or has ended.`,
       requestPath,
-      lineCount: lines.length,
-      previewLines: lines.slice(0, FEED_PREVIEW_LINES),
+      lineCount: records.length,
+      previewLines: previewLines(records, render),
       links: [
         { href: `${requestPath}${requestPath.includes("?") ? "&" : "?"}view=raw`, label: "View raw NDJSON" },
         { href: `/api/domain-listings.json?scope=${encodeURIComponent(scope)}&raw=1`, label: "View JSON" },
@@ -171,8 +208,7 @@ function handleDomainListingsNdjson(req, res, options = {}) {
   }
 
   sendNdjsonFeedHeaders(res, req, query);
-  for (const line of lines) res.write(`${line}\n`);
-  res.end();
+  return streamNdjson(res, records, render);
 }
 
 function handleDomainListingsJson(req, res, options = {}) {
@@ -218,10 +254,7 @@ function handleDomainGraphNdjson(req, res, options = {}) {
   const feedOptions = resolveNdjsonFeedOptions(query);
   const records = listDurableCandidates({ limit: feedOptions.limit });
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
-  const lines = records
-    .map((record) => buildGraphFeedRecord(record, metadataBaseUrl))
-    .filter(Boolean)
-    .map((entry) => JSON.stringify(entry));
+  const render = (record) => buildGraphFeedRecord(record, metadataBaseUrl);
   const requestPath = buildRequestPath("/api/domain-graph.ndjson", query);
 
   if (wantsHtmlFeedPreview(req, query)) {
@@ -229,8 +262,8 @@ function handleDomainGraphNdjson(req, res, options = {}) {
       title: "Domain Graph Feed",
       description: "Marketplace graph NDJSON export for AI retrieval.",
       requestPath,
-      lineCount: lines.length,
-      previewLines: lines.slice(0, FEED_PREVIEW_LINES),
+      lineCount: records.length,
+      previewLines: previewLines(records, render),
       links: [
         { href: `${requestPath}${requestPath.includes("?") ? "&" : "?"}view=raw`, label: "View raw NDJSON" },
         { href: "/api/domain-listings.ndjson?view=raw", label: "View listings feed" },
@@ -240,8 +273,7 @@ function handleDomainGraphNdjson(req, res, options = {}) {
   }
 
   sendNdjsonFeedHeaders(res, req, query);
-  for (const line of lines) res.write(`${line}\n`);
-  res.end();
+  return streamNdjson(res, records, render);
 }
 
 function handleDomainListingsDatasetJson(req, res, options = {}) {

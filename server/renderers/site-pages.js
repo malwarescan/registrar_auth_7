@@ -4,6 +4,7 @@ const { SITE_NAME, OPERATOR_NAME, orgId, websiteId, namesiloId, escapeHtml } = r
 const { renderPageDocument } = require("./site-layout");
 const { MIN_OVERALL_SCORE } = require("../candidate-store/seo-tier");
 const { DEFAULT_SITEMAP_FRESHNESS_HOURS } = require("../candidate-store/sitemap-freshness");
+const { MAX_INDEXED_AUCTIONS, STRONG_SCORE, MIN_PRONOUNCEABILITY } = require("../candidate-store/indexing-policy");
 
 const METHODOLOGY_PUBLISHED = "2026-11-05";
 const METHODOLOGY_MODIFIED = "2026-11-05";
@@ -101,8 +102,9 @@ function renderMethodologyPage(metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
         <p class="info-meta">Published ${escapeHtml(METHODOLOGY_PUBLISHED)}. Updated ${escapeHtml(METHODOLOGY_MODIFIED)}.</p>
 
         <h2>Where the data comes from</h2>
-        <p>Auction records come from NameSilo's public expired-domain auction listings, read through NameSilo's API. For each auction we store the domain, the recorded bid, the number of bids, the end time and the NameSilo auction link. We do not run auctions, hold domains or take bids; bidding happens on NameSilo.</p>
-        <p>Records are written when an ingest runs. The status shown on a page or in a feed is recalculated from the auction end time every time it is served, so an auction whose end time has passed always shows as ended, even if nobody has refreshed the record. The current records are described on the <a href="/data/">data page</a>.</p>
+        <p>Auction records come from NameSilo's public expired-domain auction listings, read through NameSilo's auction API (every auction NameSilo lists as active). For each auction we store the domain, the opening and current bid, the number of bids, the year the domain was first registered, the end time and the NameSilo auction link. We do not run auctions, hold domains or take bids; bidding happens on NameSilo.</p>
+        <p>When the site is connected to NameSilo's API the data is re-fetched every 6 hours; otherwise the site serves the last fetched copy. Either way, the status shown on a page or in a feed is recalculated from the auction end time every time it is served, so an auction whose end time has passed always shows as ended. The current data and its fetch time are described on the <a href="/data/">data page</a>.</p>
+        <p>Before anything is published we leave out adult, gambling, piracy, drug, brand look-alike (for example a name one letter away from a famous brand) and test names. Those names get no page at all.</p>
 
         <h2>Scores on domain pages</h2>
         <p>Each score is clamped to the range 20 to 97. The overall score is the weighted sum below.</p>
@@ -119,14 +121,16 @@ function renderMethodologyPage(metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
         <p>A name gets a category (such as Fintech or E-commerce) only when it contains a recognised term as a whole word, or at the start or end of the name: "legalai" signals Legal tech and AI software. Names with no recognised term get no category at all rather than a made-up one.</p>
 
         <h2>When a domain page is indexed</h2>
-        <p>A domain page asks search engines to index it only when all of these hold, and the same rule decides whether it is listed in the sitemap:</p>
+        <p>NameSilo's expired-domain auctions last only a few days, so we do not ask search engines to index thousands of pages that will soon be gone. A domain page asks to be indexed only when all of these hold, and the same rule decides whether it is listed in the sitemap:</p>
         <ul>
           <li>the auction has not ended and the record was checked within the last ${DEFAULT_SITEMAP_FRESHNESS_HOURS} hours;</li>
-          <li>the overall score is at least ${MIN_OVERALL_SCORE};</li>
-          <li>the name has no blocking flag (random string, gibberish, excessive length);</li>
-          <li>the name has at least one category or use case.</li>
+          <li>the name is 4 to 15 letters (no digits or hyphens), on .com, .net, .org, .co, .io, .ai, .app or .dev;</li>
+          <li>the name splits into one or two common English words (three words only if the auction already has a bid);</li>
+          <li>pronounceability is at least ${MIN_PRONOUNCEABILITY}, the overall score is at least ${MIN_OVERALL_SCORE}, and the auction either has a bid or scores at least ${STRONG_SCORE};</li>
+          <li>the name has no quality flag at all;</li>
+          <li>it is among the best ${MAX_INDEXED_AUCTIONS} such names in the current data (auctions with bids first).</li>
         </ul>
-        <p>Every other page is marked noindex. Ended auctions show "Auction ended" with the end date and carry no offer in their structured data.</p>
+        <p>Every other domain page is marked noindex,follow. Ended auctions show "Auction ended" with the end date, carry no offer in their structured data, are noindex and leave the sitemap. The lasting pages are the <a href="/auctions">auction lists</a>, which keep their addresses while the auctions in them change.</p>
 
         <h2>Known limitations</h2>
         <ul>

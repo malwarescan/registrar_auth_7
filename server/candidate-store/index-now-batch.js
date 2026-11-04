@@ -15,6 +15,12 @@ function configureIndexNowBatchPath(filePath) {
   batchCache = null;
 }
 
+// Installs records built in memory (for example from the committed auction
+// snapshot or a live API refresh) as the batch, replacing whatever was loaded.
+function setIndexNowBatchRecords(records) {
+  batchCache = records && typeof records === "object" ? records : null;
+}
+
 function resetIndexNowBatchPath() {
   batchPath = null;
   batchCache = null;
@@ -92,6 +98,7 @@ module.exports = {
   DEFAULT_BATCH_PATH,
   STATUS_TTL_MS,
   configureIndexNowBatchPath,
+  setIndexNowBatchRecords,
   resetIndexNowBatchPath,
   refreshIndexNowBatchTtl,
   loadIndexNowBatch,

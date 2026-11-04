@@ -30,8 +30,11 @@ function normalizeAuctionToProductRecord(auction, existing = null, options = {})
   if (!slug || !domain.includes(".")) return null;
 
   const auctionUrl = auction.auctionUrl || auction.url || `https://www.namesilo.com/auctions/${domain}`;
-  const nowIso = new Date().toISOString();
-  const status = resolveAuctionStatus(auction.auctionEndsAt);
+  // A snapshot is verified when it was fetched, not when it is loaded.
+  const now = options.now ?? Date.now();
+  const verifiedAt = options.verifiedAt || new Date(now).toISOString();
+  const statusExpiresAt = options.statusExpiresAt || new Date(new Date(verifiedAt).getTime() + STATUS_TTL_MS).toISOString();
+  const status = resolveAuctionStatus(auction.auctionEndsAt, now);
   const intelligence = analyzeProductIntelligence({
     domain,
     root: auction.root,
@@ -50,8 +53,10 @@ function normalizeAuctionToProductRecord(auction, existing = null, options = {})
     currentBid: auction.currentBid ?? null,
     bidCount: auction.bidCount ?? 0,
     auctionEndsAt: auction.auctionEndsAt || null,
-    statusVerifiedAt: nowIso,
-    statusExpiresAt: new Date(Date.now() + STATUS_TTL_MS).toISOString(),
+    ...(Number.isFinite(auction.openingBid) ? { openingBid: auction.openingBid } : {}),
+    ...(auction.domainCreatedAt ? { domainCreatedAt: auction.domainCreatedAt } : {}),
+    statusVerifiedAt: verifiedAt,
+    statusExpiresAt,
     canonicalUrl: `${PUBLIC_BASE_URL}/domains/${slug}`,
     acquisitionPath: {
       type: "auction",
@@ -139,6 +144,9 @@ function productRecordToCandidate(record) {
     scores: record.baseScores || {},
     matchedTerms: record.baseSignals?.matchedTerms || [],
     tld: record.tld,
+    words: record.baseSignals?.words || [],
+    openingBid: record.openingBid ?? null,
+    domainCreatedAt: record.domainCreatedAt || null,
     domainType: record.baseSignals?.domainType,
     namingLane: record.baseSignals?.namingLane,
     candidateId: record.candidateId || `product_${record.slug}`,

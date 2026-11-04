@@ -1,5 +1,6 @@
 const { evaluateQuality, clampScore } = require("../domain-fetch/evaluate-quality");
 const { classifyDomainType, detectNamingLane } = require("../domain-fetch/classify-domain");
+const { segmentWords } = require("./name-words");
 
 // Category terms are matched as whole hyphen-separated tokens, or as the start
 // or end of a concatenated name ("anudesk" ends with "desk", "legalai" ends
@@ -116,6 +117,7 @@ function analyzeProductIntelligence({ domain, root, tld, currentBid }) {
   const quality = evaluateQuality(root);
   const categoryGuesses = buildCategoryGuesses(root);
   const riskFlags = buildRiskFlags(quality.qualityFlags, root, tld);
+  const words = segmentWords(root);
   return {
     baseScores: buildBaseScores({ root, tld, quality, currentBid }),
     qualityFlags: quality.qualityFlags,
@@ -129,6 +131,7 @@ function analyzeProductIntelligence({ domain, root, tld, currentBid }) {
       domainType: classifyDomainType(root),
       namingLane: detectNamingLane(root),
       length: String(root || "").length,
+      ...(words ? { words } : {}),
     },
   };
 }

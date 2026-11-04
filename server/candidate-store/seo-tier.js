@@ -40,8 +40,10 @@ function isProductOfferSchemaComplete(record, metadataBaseUrl) {
   return types.has("Product") && types.has("Offer");
 }
 
+// A name carries meaning when it signals a category or use case, or when it
+// reads entirely as common English words (see name-words.js).
 function hasCategoryOrUseCaseSignals(record) {
-  return Boolean(record.categoryGuesses?.length || record.buyerUseCases?.length);
+  return Boolean(record.categoryGuesses?.length || record.buyerUseCases?.length || record.baseSignals?.words?.length);
 }
 
 function hasProductAsset(record, assetsDir) {

@@ -3,6 +3,11 @@ const { listSitemapCandidates } = require("./candidate-store/durable-candidates"
 const { toAbsolutePublicUrl } = require("./public-url");
 const { listGuideSlugs, MODIFIED: GUIDES_MODIFIED } = require("./guides/guide-content");
 
+// Loaded lazily: the hub renderer pulls in the store modules.
+function listIndexableHubEntries() {
+  return require("./renderers/auction-hubs").listIndexableHubEntries();
+}
+
 // Date each core page's content last changed (YYYY-MM-DD).
 const CORE_PAGE_LASTMOD = {
   "/": "2026-11-05",
@@ -56,6 +61,9 @@ function getCoreSitemapPaths() {
     "/data/domain-graph",
     "/guides",
     ...listGuideSlugs().map((slug) => `/guides/${slug}`),
+    // Auction hubs: /auctions always, sub-hubs only while they list enough
+    // running auctions to be worth indexing.
+    ...listIndexableHubEntries().map((entry) => entry.pathname),
   ];
 }
 
@@ -130,10 +138,14 @@ function buildSitemapIndex(options = {}) {
 }
 
 function buildCoreSitemapEntries(options = {}) {
+  // Hub lastmod is when the auction data was fetched.
+  const hubLastmod = new Map(listIndexableHubEntries().map((entry) => [entry.pathname, formatLastmod(entry.lastmod)]));
   return getCoreSitemapPaths().map((pathname) => ({
     pathname: toAbsolutePublicUrl(pathname, options),
-    lastmod: CORE_PAGE_LASTMOD[pathname] || (pathname.startsWith("/guides/") ? GUIDES_MODIFIED : null),
-    changefreq: "monthly",
+    lastmod: hubLastmod.has(pathname)
+      ? hubLastmod.get(pathname)
+      : CORE_PAGE_LASTMOD[pathname] || (pathname.startsWith("/guides/") ? GUIDES_MODIFIED : null),
+    changefreq: hubLastmod.has(pathname) ? "daily" : "monthly",
   }));
 }
 

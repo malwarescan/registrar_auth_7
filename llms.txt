@@ -20,7 +20,8 @@ Live site: **https://urlsnatcher.com**
 - `/methodology/` — how every score is calculated, data source, indexing rules, limitations, glossary
 - `/data/` — data hub: the listing, catalog and graph feeds explained in plain language
 - `/about/` — who runs the site (NameSilo)
-- `/domains/{slug}` — one page per recorded auction; ended auctions show "Auction ended" with the date and are noindex
+- `/auctions` — this week's NameSilo expired-domain auctions, with picks; lists at `/auctions/with-bids`, `/auctions/dot-com`, `/auctions/word-names` (stable URLs, rebuilt from the latest data)
+- `/domains/{slug}` — one page per recorded auction; only a small set of clean, word-based running auctions is indexable; ended auctions show "Auction ended" with the date and are noindex
 
 ## Terms
 
@@ -164,7 +165,7 @@ Expand index tier in batches (500 → 2,000 → 5,000 → 10,000) only after GSC
 
 Run `node scripts/verify-sitemap-strategy.js` for current counts. Frozen QA manifest: `data/reports/index-batch-500-manifest-2026-06-12T19-29-50-048Z.json`.
 
-Production deploy ships the frozen 500-record batch in `data/index-now-batch.json` (auctions that ended 13-14 June 2026, so all their pages are noindex until a fresh ingest) (regenerate with `npm run export:index-now-batch` after promotion changes). Railway uses this when `data/product-records/` is absent. Sitemap generation refreshes short TTL on read for batch records still within the sitemap freshness window.
+Production loads `data/namesilo-auctions-snapshot.json` (NameSilo listAuctions statusId=2/typeId=3, fields stripped to domain, opening/current bid, bid count, creation date and end time; adult, gambling, piracy, drug, brand look-alike and test names removed) on boot when `data/product-records/` is absent. With `NAMESILO_API_KEY` set, the server re-fetches all active auctions on boot and every 6 hours and keeps the last good data if a fetch fails. Rebuild the committed snapshot with `node scripts/build-auction-snapshot.js --from-api` (or `--from-file=<dump.json>`). Domain-page indexing policy: `server/candidate-store/indexing-policy.js` (at most 150 pages; 4-15 letters on a trusted extension, made of common words, no quality flags, bids first).
 
 ## Persistent APIs
 

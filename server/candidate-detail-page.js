@@ -641,6 +641,13 @@ function renderBestFitModule(candidate, intentRecord) {
           </div>`;
 }
 
+// Year the domain was first registered, from NameSilo's auction data.
+function renderRegisteredRow(candidate) {
+  const created = candidate.domainCreatedAt ? new Date(candidate.domainCreatedAt) : null;
+  if (!created || Number.isNaN(created.getTime())) return "";
+  return `<div><dt>First registered</dt><dd>${created.getUTCFullYear()}</dd></div>`;
+}
+
 function renderAcquisitionModule(candidate, isAuction, stale, inactive = false) {
   if (inactive) {
     const provider = candidate.acquisitionPath?.provider || "NameSilo";
@@ -652,6 +659,7 @@ function renderAcquisitionModule(candidate, isAuction, stale, inactive = false) 
               <div><dt>Status</dt><dd>Ended</dd></div>
               ${ended ? `<div><dt>Ended</dt><dd>${escapeHtml(ended)}</dd></div>` : ""}
               <div><dt>Last recorded bid</dt><dd>${escapeHtml(formatUsd(candidate.acquisitionPath?.currentBid))}</dd></div>
+              ${renderRegisteredRow(candidate)}
               <div><dt>Last checked</dt><dd>${escapeHtml(formatUtc(candidate.statusVerifiedAt))} UTC</dd></div>
             </dl>
           </div>`;
@@ -676,6 +684,7 @@ function renderAcquisitionModule(candidate, isAuction, stale, inactive = false) 
               <div><dt>${escapeHtml(priceLabel)}</dt><dd>${escapeHtml(priceValue)}</dd></div>
               <div><dt>Verified</dt><dd>${escapeHtml(verified)}</dd></div>
               ${ends ? `<div><dt>Ends</dt><dd>${escapeHtml(ends)}</dd></div>` : ""}
+              ${renderRegisteredRow(candidate)}
             </dl>
           </div>`;
 }
@@ -789,6 +798,13 @@ function buildBaseEvidenceRows(candidate, scores, isAuction, inactive = false) {
   const rows = [];
   const terms = (candidate.matchedTerms || []).filter(Boolean);
   if (terms.length) rows.push(buildTermEvidence(terms[0], candidate));
+  const words = (candidate.words || []).filter(Boolean);
+  if (words.length) {
+    rows.push({
+      title: "Reads as words",
+      detail: `${words.join(" + ")}: ${words.length === 1 ? "a common English word" : "common English words"}, so the name is easy to say and spell.`,
+    });
+  }
   if (Number.isFinite(scores.brandability)) {
     rows.push({
       title: "Brandability",
@@ -965,7 +981,7 @@ function buildCandidateJsonLd(candidate, canonicalUrl, ogImage, stale, matchedIn
       "@id": `${canonicalUrl}#breadcrumbs`,
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: `${metadataBaseUrl}/` },
-        { "@type": "ListItem", position: 2, name: "Domain listings", item: `${metadataBaseUrl}/data/domain-listings` },
+        { "@type": "ListItem", position: 2, name: "Auctions", item: `${metadataBaseUrl}/auctions` },
         { "@type": "ListItem", position: 3, name: candidate.domain, item: canonicalUrl },
       ],
     },
@@ -1448,7 +1464,7 @@ function renderCanonicalDomainPage(candidate, pageContext = {}, options = {}) {
     candidate.domain
   )}" data-status="${escapeHtml(visibleStatus)}" data-source="${escapeHtml(candidate.source)}" data-page-mode="canonical">
       <nav aria-label="Breadcrumb" class="breadcrumbs candidate-breadcrumbs candidate-breadcrumbs--visible">
-        <a href="/">Home</a> › <a href="/data/domain-listings">Domain listings</a> › <span aria-current="page">${escapeHtml(candidate.domain)}</span>
+        <a href="/">Home</a> › <a href="/auctions">Auctions</a> › <span aria-current="page">${escapeHtml(candidate.domain)}</span>
       </nav>
       <section class="productHeroStage">
         <div class="detailContent">

@@ -4,8 +4,8 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { GUIDES, listGuideSlugs } = require("../server/guides/guide-content");
+const { buildAuctionStore } = require("../server/candidate-store/auction-snapshot");
 const {
-  getAuctionSnapshotStats,
   renderGuidePage,
   renderGuidesIndexPage,
   resolveGuideRoute,
@@ -103,38 +103,32 @@ test("guides are listed in the core sitemap, which the index lists", () => {
   assert.match(buildSitemapIndex({ port: 4173, isProduction: true }), /sitemap-core\.xml/);
 });
 
-test("auction snapshot stats are computed from batch data", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "snatch-guides-"));
-  try {
-    const batchPath = path.join(dir, "batch.json");
-    const base = { provider: "NameSilo", tld: ".com", auctionEndsAt: "2026-06-13T08:00:00.000Z", statusVerifiedAt: "2026-06-13T05:00:00.000Z" };
-    fs.writeFileSync(
-      batchPath,
-      JSON.stringify({
-        a: { ...base, bidCount: 0, currentBid: 1 },
-        b: { ...base, bidCount: 0, currentBid: 1 },
-        c: { ...base, bidCount: 3, currentBid: 9, auctionEndsAt: "2026-06-14T08:00:00.000Z" },
-      })
-    );
-    const stats = getAuctionSnapshotStats(batchPath);
-    assert.equal(stats.total, 3);
-    assert.equal(stats.zeroBids, 2);
-    assert.equal(stats.withBids, 1);
-    assert.equal(stats.maxBidCount, 3);
-    assert.equal(stats.atMinimumPrice, 2);
-    assert.equal(stats.medianPrice, 1);
-    assert.equal(stats.maxPrice, 9);
-    assert.equal(stats.lastEnd, "2026-06-14T08:00:00.000Z");
-    assert.equal(getAuctionSnapshotStats(path.join(dir, "missing.json")), null);
+test("auction data stats are computed from NameSilo auction data", () => {
+  const raw = [
+    { domain: "alphaone.com", openingBid: 1, currentBid: 1, bidsQuantity: 0, auctionEndsOnUtc: "2026-06-13 08:00:00" },
+    { domain: "betatwo.com", openingBid: 1, currentBid: 1, bidsQuantity: 0, auctionEndsOnUtc: "2026-06-13 08:00:00" },
+    { domain: "gammathree.com", openingBid: 2, currentBid: 9, bidsQuantity: 3, auctionEndsOnUtc: "2026-06-14 08:00:00" },
+  ];
+  const { meta } = buildAuctionStore(raw, { fetchedAt: "2026-06-13T05:00:00Z", now: Date.parse("2026-06-13T06:00:00Z") });
+  const stats = meta.stats;
+  assert.equal(stats.total, 3);
+  assert.equal(stats.zeroBids, 2);
+  assert.equal(stats.withBids, 1);
+  assert.equal(stats.maxBidCount, 3);
+  assert.equal(stats.atMinimumOpening, 2);
+  assert.equal(stats.openingMedian, 1);
+  assert.equal(stats.bidPriceMax, 9);
+  assert.equal(stats.lastEnd, "2026-06-14T08:00:00.000Z");
 
-    const html = renderGuidePage("should-i-bid-on-a-domain-with-low-bid-count", BASE, { batchPath });
-    assert.match(html, /What our auction data shows/);
-    assert.match(html, /2 of 3 \(66\.7%\)/);
-    const noData = renderGuidePage("should-i-bid-on-a-domain-with-low-bid-count", BASE, { batchPath: path.join(dir, "missing.json") });
-    assert.doesNotMatch(noData, /What our auction data shows/);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  const html = renderGuidePage("should-i-bid-on-a-domain-with-low-bid-count", BASE, { auctionData: meta });
+  assert.match(html, /What our auction data shows/);
+  assert.match(html, /2 of 3 \(66\.7%\)/);
+  assert.match(html, /13 June 2026 at 05:00 UTC/);
+  assert.match(html, /have since ended/);
+  const opening = renderGuidePage("how-to-estimate-a-fair-bid-for-an-expired-domain", BASE, { auctionData: meta });
+  assert.match(opening, /Opening bid, lowest/);
+  const noData = renderGuidePage("should-i-bid-on-a-domain-with-low-bid-count", BASE, { auctionData: null });
+  assert.doesNotMatch(noData, /What our auction data shows/);
 });
 
 test("homepage has a descriptive title, meta description and guide links", () => {

@@ -11,6 +11,7 @@ const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
 const SITE_NAV = [
   { href: "/", label: "Home" },
+  { href: "/auctions", label: "Auctions" },
   { href: "/experiments/intent-fetch/", label: "Domain finder" },
   { href: "/guides", label: "Guides" },
   { href: "/methodology/", label: "Methodology" },

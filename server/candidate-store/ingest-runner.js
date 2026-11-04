@@ -87,7 +87,8 @@ function parseIngestCliArgs(argv = process.argv.slice(2)) {
   };
 }
 
-async function fetchNameSiloAuctionPage({ apiKey, fetchFn = fetch, page = 1, pageSize = 200 }) {
+// One page of raw NameSilo auction records, exactly as the API returns them.
+async function fetchNameSiloAuctionRawPage({ apiKey, fetchFn = fetch, page = 1, pageSize = 200 }) {
   const params = new URLSearchParams({
     version: "1",
     type: "json",
@@ -107,8 +108,13 @@ async function fetchNameSiloAuctionPage({ apiKey, fetchFn = fetch, page = 1, pag
   if (!response.ok || String(payload?.reply?.code || "") !== "300") {
     throw new Error(payload?.reply?.detail || "NameSilo auction ingest failed.");
   }
-  const auctions = extractAuctionRecords(payload).map(normalizeAuctionRecord);
-  return { page, auctions, rawCount: auctions.length };
+  return extractAuctionRecords(payload);
+}
+
+async function fetchNameSiloAuctionPage(options = {}) {
+  const raw = await fetchNameSiloAuctionRawPage(options);
+  const auctions = raw.map(normalizeAuctionRecord);
+  return { page: options.page || 1, auctions, rawCount: auctions.length };
 }
 
 function processAuctionBatch(auctions, stats, options = {}) {
@@ -317,6 +323,7 @@ module.exports = {
   DEFAULT_REPORTS_DIR,
   parseIngestCliArgs,
   assertWriteMode,
+  fetchNameSiloAuctionRawPage,
   fetchNameSiloAuctionPage,
   runNameSiloAuctionIngest,
   summarizeIngestStats,

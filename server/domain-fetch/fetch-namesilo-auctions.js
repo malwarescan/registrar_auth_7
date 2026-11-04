@@ -6,9 +6,13 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : undefined;
 }
 
+// NameSilo returns UTC timestamps without a zone ("2026-11-05 16:00:00").
+// Read those as UTC rather than as server-local time.
 function toIsoDate(value) {
   if (!value) return null;
-  const d = new Date(value);
+  const text = String(value).trim();
+  const utcText = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(text) ? `${text.replace(" ", "T")}Z` : text;
+  const d = new Date(utcText);
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString();
 }
@@ -37,7 +41,9 @@ function normalizeAuctionRecord(raw) {
     root,
     tld,
     currentBid: toNumber(raw.currentBid),
-    bidCount: Number.parseInt(raw.bidsQuantity || raw.hasBids || 0, 10) || 0,
+    openingBid: toNumber(raw.openingBid),
+    bidCount: Number.parseInt(raw.bidsQuantity || 0, 10) || 0,
+    domainCreatedAt: toIsoDate(raw.domainCreatedOn),
     auctionEndsAt,
     auctionEndsIn: toEndsIn(auctionEndsAt),
     auctionUrl: raw.url || `https://www.namesilo.com/auctions/${domain}`,
@@ -78,6 +84,8 @@ async function fetchNameSiloAuctions({ apiKey, fetchFn = fetch, pageSize = 100 }
 }
 
 module.exports = {
+  NAMESILO_AUCTIONS_ENDPOINT,
+  toIsoDate,
   fetchNameSiloAuctions,
   normalizeAuctionRecord,
   extractAuctionRecords,

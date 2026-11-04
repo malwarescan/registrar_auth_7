@@ -19,7 +19,6 @@ const {
 const { validateIndexNowEligibility } = require("../server/candidate-store/seo-tier");
 const { countListingCandidates } = require("../server/candidate-store/listing-feed");
 const { resolveProductOgImageUrl } = require("../server/product-asset");
-const { INDEX_NOW_BATCH_PATH } = require("../server/candidate-store/store-paths");
 
 function sampleAuction(domain, overrides = {}) {
   const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
@@ -128,23 +127,26 @@ test("ended auction excluded from sitemap even if recently verified", () => {
 });
 
 test("index-now batch store keeps sitemap populated after short TTL expiry", () => {
-  if (!fs.existsSync(INDEX_NOW_BATCH_PATH)) return;
-  configureStorePaths({ indexNowBatchPath: INDEX_NOW_BATCH_PATH });
-  const now = Date.parse("2026-06-13T07:00:00.000Z");
-  const { loadIndexNowBatch } = require("../server/candidate-store/index-now-batch");
-  const batch = loadIndexNowBatch({ refreshTtl: false });
-  for (const record of Object.values(batch)) {
+  // The batch is now built in memory from NameSilo auction data.
+  const { buildAuctionStore, installAuctionStore } = require("../server/candidate-store/auction-snapshot");
+  const fetchedAt = "2026-11-04T18:00:00.000Z";
+  const now = Date.parse("2026-11-04T20:00:00.000Z");
+  const raw = ["kettleskin.com", "batbot.com", "09kybuo0c.com"].map((domain) => ({
+    domain,
+    openingBid: 1,
+    currentBid: 1,
+    bidsQuantity: 1,
+    auctionEndsOnUtc: "2026-11-06 16:00:00",
+  }));
+  const result = buildAuctionStore(raw, { fetchedAt, now });
+  installAuctionStore(result);
+  for (const record of Object.values(result.records)) {
     record.statusExpiresAt = new Date(now - 60 * 60 * 1000).toISOString();
-    if (!record.statusVerifiedAt) {
-      record.statusVerifiedAt = new Date(now - 2 * 60 * 60 * 1000).toISOString();
-    }
   }
   const candidates = listSitemapCandidates({ now });
-  // Every index-now record in the shipped batch stays listed; records demoted by
-  // the quality gate (random strings, no category context) are hold-noindex.
-  const indexNow = Object.values(batch).filter((record) => record.seoTier === "index-now").length;
-  assert.ok(indexNow > 0);
-  assert.equal(candidates.length, indexNow);
+  assert.ok(result.meta.indexedCount > 0);
+  assert.equal(candidates.length, result.meta.indexedCount);
+  resetStorePaths();
 });
 
 test("missing domain image resolves to default OG asset URL", () => {

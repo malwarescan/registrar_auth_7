@@ -174,13 +174,15 @@ function listSitemapCandidates(options = {}) {
   if (usingIndexNowBatchStore()) {
     touchIndexNowBatchTtlForSitemap(now);
   }
+  // The eligibility rule runs first: it rejects most records cheaply, before
+  // any schema graph is built.
   return listDurableCandidates().filter((record) => {
     if (!record?.slug || !record.domain) return false;
-    if (!isGraphComplete(record, metadataBaseUrl)) return false;
-    if (!isProductOfferSchemaComplete(record, metadataBaseUrl)) return false;
     if (validateSitemapEligibility(record, now, { metadataBaseUrl, assetsDir: options.assetsDir }) !== null) {
       return false;
     }
+    if (!isGraphComplete(record, metadataBaseUrl)) return false;
+    if (!isProductOfferSchemaComplete(record, metadataBaseUrl)) return false;
     return true;
   });
 }

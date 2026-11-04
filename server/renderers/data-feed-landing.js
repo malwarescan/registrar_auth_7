@@ -3,16 +3,17 @@ const {
   listDurableCandidates,
 } = require("../candidate-store/durable-candidates");
 const { countListingCandidates } = require("../candidate-store/listing-feed");
-const { resolveLifecycleState } = require("../candidate-store/product-lifecycle");
+const { hasAuctionEnded } = require("../candidate-store/product-lifecycle");
 const { renderDomainListingRecord } = require("./listing-feed-renderer");
 const { buildGraphFeedRecord } = require("./graph-feed-renderer");
 const { renderDomainListingsDatasetMetadata, dataHubDatasetId } = require("./dataset-metadata-renderer");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 const { SITE_NAME, orgId, websiteId, namesiloId, escapeHtml } = require("../site-identity");
 const { renderPageDocument, renderSiteHeadTags } = require("./site-layout");
+const { describeAuctionData } = require("./auction-data-label");
 
 const UPDATE_FREQUENCY =
-  "Records are written when auctions are ingested from NameSilo. Each record's status is recalculated from its auction end time every time it is served.";
+  "Records come from NameSilo's auction API and are re-fetched every 6 hours when the site's API connection is on; otherwise the last fetched copy is served. Each record's status is recalculated from its auction end time every time it is served.";
 const LICENSE_NOTE = "Free to read and reuse with attribution to the site. Auction facts belong to NameSilo; check them on NameSilo before acting.";
 
 function formatDate(iso) {
@@ -27,7 +28,8 @@ function getSnapshotSummary() {
   const records = listDurableCandidates();
   const ends = records.map((record) => record.auctionEndsAt).filter(Boolean).sort();
   const checked = records.map((record) => record.statusVerifiedAt).filter(Boolean).sort();
-  const live = records.filter((record) => resolveLifecycleState(record) === "active").length;
+  // Running means the end time has not passed yet.
+  const live = records.filter((record) => !hasAuctionEnded(record)).length;
   return {
     total: records.length,
     live,
@@ -306,6 +308,11 @@ const DATA_PAGE_STYLES = `
 
 function renderSnapshotLine(summary) {
   if (!summary.total) return "No auction records are loaded right now.";
+  const label = describeAuctionData();
+  const liveLine = summary.live
+    ? `${summary.live.toLocaleString("en-US")} are still running and ${summary.ended.toLocaleString("en-US")} have ended.`
+    : "All of them have ended, so none can be bid on now; the records are kept for reference.";
+  if (label) return `${label.sentence} Right now ${liveLine.charAt(0).toLowerCase()}${liveLine.slice(1)}`;
   const range =
     summary.firstEnd && summary.lastEnd
       ? formatDate(summary.firstEnd) === formatDate(summary.lastEnd)
@@ -313,10 +320,7 @@ function renderSnapshotLine(summary) {
         : ` ending between ${formatDate(summary.firstEnd)} and ${formatDate(summary.lastEnd)}`
       : "";
   const checked = summary.lastChecked ? ` Last checked against NameSilo on ${formatDate(summary.lastChecked)}.` : "";
-  const liveLine = summary.live
-    ? `${summary.live.toLocaleString()} are still running and ${summary.ended.toLocaleString()} have ended.`
-    : "All of them have ended, so none can be bid on now; the records are kept for reference.";
-  return `The current snapshot holds ${summary.total.toLocaleString()} NameSilo expired-domain auctions${range}. ${liveLine}${checked}`;
+  return `The current data holds ${summary.total.toLocaleString("en-US")} NameSilo expired-domain auctions${range}. ${liveLine}${checked}`;
 }
 
 function renderFeedLandingPage(pageKey, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {

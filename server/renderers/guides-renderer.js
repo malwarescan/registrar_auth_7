@@ -1,6 +1,6 @@
-const fs = require("fs");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
-const { DEFAULT_BATCH_PATH } = require("../candidate-store/index-now-batch");
+const { getAuctionDataMeta } = require("../candidate-store/auction-snapshot");
+const { describeAuctionData } = require("./auction-data-label");
 const { GUIDES, SOURCES, PUBLISHED, MODIFIED, getGuide } = require("../guides/guide-content");
 const { SITE_NAME, orgId, websiteId } = require("../site-identity");
 const { renderPageDocument } = require("./site-layout");
@@ -21,120 +21,61 @@ function jsonLdScript(payload) {
   return `<script type="application/ld+json">${JSON.stringify(payload).replace(/<\/script/gi, "<\\/script")}</script>`;
 }
 
-function formatUtcDate(iso) {
-  return new Date(iso).toISOString().slice(0, 10);
-}
-
 function formatPercent(part, total) {
   return `${((part / total) * 100).toFixed(1)}%`;
-}
-
-// Aggregates from the NameSilo auction snapshot shipped in data/index-now-batch.json.
-// Bids are as observed at verification time, before the auctions closed.
-function getAuctionSnapshotStats(batchPath = DEFAULT_BATCH_PATH) {
-  let records;
-  try {
-    const parsed = JSON.parse(fs.readFileSync(batchPath, "utf8"));
-    records = Array.isArray(parsed) ? parsed : Object.values(parsed || {});
-  } catch {
-    return null;
-  }
-  const auctions = records.filter(
-    (record) =>
-      record &&
-      Number.isFinite(Number(record.bidCount)) &&
-      Number.isFinite(Number(record.currentBid)) &&
-      record.auctionEndsAt &&
-      record.statusVerifiedAt
-  );
-  if (!auctions.length) return null;
-
-  const bids = auctions.map((record) => Number(record.bidCount));
-  const prices = auctions.map((record) => Number(record.currentBid)).sort((a, b) => a - b);
-  const endTimes = auctions.map((record) => record.auctionEndsAt).sort();
-  const verifiedTimes = auctions.map((record) => record.statusVerifiedAt).sort();
-  const providers = [...new Set(auctions.map((record) => record.provider).filter(Boolean))];
-  const tlds = [...new Set(auctions.map((record) => record.tld).filter(Boolean))];
-  const mid = Math.floor(prices.length / 2);
-  const median = prices.length % 2 ? prices[mid] : (prices[mid - 1] + prices[mid]) / 2;
-  const minPrice = prices[0];
-
-  return {
-    total: auctions.length,
-    providers,
-    tlds,
-    zeroBids: bids.filter((count) => count === 0).length,
-    withBids: bids.filter((count) => count > 0).length,
-    maxBidCount: Math.max(...bids),
-    atMinimumPrice: prices.filter((price) => price === minPrice).length,
-    minPrice,
-    medianPrice: median,
-    maxPrice: prices[prices.length - 1],
-    firstEnd: endTimes[0],
-    lastEnd: endTimes[endTimes.length - 1],
-    firstVerified: verifiedTimes[0],
-    lastVerified: verifiedTimes[verifiedTimes.length - 1],
-  };
 }
 
 function formatUsd(value) {
   return `$${Number(value).toFixed(Number.isInteger(Number(value)) ? 0 : 2)}`;
 }
 
-function formatLongDate(iso) {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-}
-
-// How the sample was drawn, stated the same way wherever the data appears.
-function describeSample(stats) {
-  const provider = stats.providers.join(", ") || "registrar";
-  const tld = stats.tlds.join(", ");
-  const sampled =
-    formatUtcDate(stats.firstVerified) === formatUtcDate(stats.lastVerified)
-      ? formatLongDate(stats.firstVerified)
-      : `${formatLongDate(stats.firstVerified)} to ${formatLongDate(stats.lastVerified)}`;
-  const ends =
-    formatUtcDate(stats.firstEnd) === formatUtcDate(stats.lastEnd)
-      ? `ending on ${formatLongDate(stats.firstEnd)}`
-      : `ending between ${formatLongDate(stats.firstEnd)} and ${formatLongDate(stats.lastEnd)}`;
-  return `Sample: ${stats.total} ${escapeHtml(provider)} expired-domain auctions (${escapeHtml(tld)} only), recorded on ${escapeHtml(sampled)} for auctions ${escapeHtml(ends)}. These are the auctions we chose to publish pages for, picked by our own name scores, not a random sample of all ${escapeHtml(provider)} auctions. Figures are as recorded on that date, before the auctions closed; all of these auctions have since ended.`;
-}
-
-function renderBidCountSection(stats) {
+// Figures come from the NameSilo auction data currently loaded (the committed
+// snapshot, or live API data when NAMESILO_API_KEY is set), as they stood when
+// that data was fetched.
+function renderBidCountSection(meta, label) {
+  const stats = meta.stats;
   return `<section class="guide-section guide-data">
         <h2>What our auction data shows</h2>
-        <p>${describeSample(stats)}</p>
+        <p>${escapeHtml(label.sentence)}</p>
         <table>
-          <thead><tr><th>Bid activity at the time we recorded it</th><th>Auctions</th></tr></thead>
+          <thead><tr><th>Bid activity when the data was fetched</th><th>Auctions</th></tr></thead>
           <tbody>
-            <tr><td>No bids yet</td><td>${stats.zeroBids} of ${stats.total} (${formatPercent(stats.zeroBids, stats.total)})</td></tr>
-            <tr><td>At least one bid</td><td>${stats.withBids} of ${stats.total} (${formatPercent(stats.withBids, stats.total)})</td></tr>
+            <tr><td>No bids yet</td><td>${stats.zeroBids.toLocaleString("en-US")} of ${stats.total.toLocaleString("en-US")} (${formatPercent(stats.zeroBids, stats.total)})</td></tr>
+            <tr><td>At least one bid</td><td>${stats.withBids.toLocaleString("en-US")} of ${stats.total.toLocaleString("en-US")} (${formatPercent(stats.withBids, stats.total)})</td></tr>
             <tr><td>Most bids on a single auction</td><td>${stats.maxBidCount}</td></tr>
           </tbody>
         </table>
-        <p>So a domain with no bids hours before its auction ends is in the large majority, not an outlier. A zero bid count says that few people have looked, not that something is wrong with the name; your own checks have to answer that.</p>
+        <p>So a domain with no bids a day or two before its auction ends is in the large majority, not an outlier. A zero bid count says that few people have looked, not that something is wrong with the name; your own checks have to answer that. The auctions that do have bids are listed on our <a href="/auctions/with-bids">auctions with bids</a> page.</p>
       </section>`;
 }
 
-function renderOpeningBidSection(stats) {
+function renderOpeningBidSection(meta, label) {
+  const stats = meta.stats;
+  const bidRows =
+    stats.withBids > 0
+      ? `<tr><td>Current bid, median of the ${stats.withBids.toLocaleString("en-US")} auctions with bids</td><td>${escapeHtml(formatUsd(stats.bidPriceMedian))}</td></tr>
+            <tr><td>Current bid, highest</td><td>${escapeHtml(formatUsd(stats.bidPriceMax))}</td></tr>`
+      : "";
   return `<section class="guide-section guide-data">
-        <h2>What opening bids looked like in our sample</h2>
-        <p>On ${escapeHtml(formatLongDate(stats.firstVerified))} we recorded the bids on ${stats.total} ${escapeHtml(stats.providers.join(", ") || "registrar")} ${escapeHtml(stats.tlds.join(", "))} auctions that our scores had picked for publishing (not a random draw; the sample is described in full in the <a href="/guides/should-i-bid-on-a-domain-with-low-bid-count">low bid count guide</a>). ${stats.zeroBids} of them had no bids at that point, so these amounts are almost all opening bids, not prices anyone agreed to pay. Every one of these auctions has since closed.</p>
+        <h2>What opening bids look like in our latest data</h2>
+        <p>These figures cover every active NameSilo expired-domain auction in the data we fetched on ${escapeHtml(label.fetchedLabel)}: ${stats.total.toLocaleString("en-US")} auctions (the data is described in full in the <a href="/guides/should-i-bid-on-a-domain-with-low-bid-count">low bid count guide</a>). Only ${stats.withBids.toLocaleString("en-US")} had any bids at that point, so almost all of these amounts are starting prices, not prices anyone agreed to pay.${label.stale ? " Every one of these auctions has since closed." : ""}</p>
         <table>
-          <thead><tr><th>Recorded bid</th><th>Amount</th></tr></thead>
+          <thead><tr><th>Bid</th><th>Amount</th></tr></thead>
           <tbody>
-            <tr><td>Lowest (seen on ${stats.atMinimumPrice} auctions)</td><td>${escapeHtml(formatUsd(stats.minPrice))}</td></tr>
-            <tr><td>Median</td><td>${escapeHtml(formatUsd(stats.medianPrice))}</td></tr>
-            <tr><td>Highest</td><td>${escapeHtml(formatUsd(stats.maxPrice))}</td></tr>
+            <tr><td>Opening bid, lowest (${stats.atMinimumOpening.toLocaleString("en-US")} auctions opened here)</td><td>${escapeHtml(formatUsd(stats.openingMin))}</td></tr>
+            <tr><td>Opening bid, median</td><td>${escapeHtml(formatUsd(stats.openingMedian))}</td></tr>
+            <tr><td>Opening bid, highest</td><td>${escapeHtml(formatUsd(stats.openingMax))}</td></tr>
+            ${bidRows}
           </tbody>
         </table>
-        <p>An opening bid is the floor the auction starts from, not an estimate of value, so it cannot anchor your maximum. Work out your number with the method above and treat the opening bid only as the least you would pay. </p>
+        <p>An opening bid is the floor the auction starts from, not an estimate of value, so it cannot anchor your maximum. Work out your number with the method above and treat the opening bid only as the least you would pay.</p>
       </section>`;
 }
 
-function renderSnapshotSection(stats, kind = "bid-count") {
-  if (!stats) return "";
-  return kind === "opening-bids" ? renderOpeningBidSection(stats) : renderBidCountSection(stats);
+function renderSnapshotSection(meta, kind = "bid-count") {
+  const label = describeAuctionData(meta);
+  if (!label) return "";
+  return kind === "opening-bids" ? renderOpeningBidSection(meta, label) : renderBidCountSection(meta, label);
 }
 
 function renderTable(table) {
@@ -277,7 +218,7 @@ function renderGuidePage(slug, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL, option
   if (!guide) return null;
   const baseUrl = metadataBaseUrl;
   const canonical = guideUrl(baseUrl, guide.slug);
-  const stats = guide.dataSection ? getAuctionSnapshotStats(options.batchPath) : null;
+  const auctionData = guide.dataSection ? (options.auctionData !== undefined ? options.auctionData : getAuctionDataMeta()) : null;
   const dataKind = guide.dataSection === "opening-bids" ? "opening-bids" : "bid-count";
 
   const schemas = [
@@ -308,7 +249,7 @@ function renderGuidePage(slug, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL, option
         ${guide.answer.map((text, index) => `<p class="${index === 0 ? "guide-answer" : ""}">${escapeHtml(text)}</p>`).join("\n        ")}
         <p class="guide-meta">Updated ${escapeHtml(MODIFIED)}.</p>
         ${guide.sections.map(renderSection).join("\n        ")}
-        ${stats ? renderSnapshotSection(stats, dataKind) : ""}
+        ${auctionData?.stats ? renderSnapshotSection(auctionData, dataKind) : ""}
         <section class="guide-section">
           <h2>Decision checklist</h2>
           ${renderList(guide.checklist)}
@@ -414,7 +355,7 @@ function resolveGuideRoute(pathname) {
 }
 
 module.exports = {
-  getAuctionSnapshotStats,
+  renderSnapshotSection,
   renderGuidePage,
   renderGuidesIndexPage,
   resolveGuideRoute,

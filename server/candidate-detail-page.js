@@ -16,10 +16,28 @@ const { renderSnatchLogoAnchor } = require("./snatch-logo-markup");
 const { buildSeoJsonLd, buildSeoRenderData } = require("./renderers/seo-renderer");
 const { buildIntentOverlay } = require("./renderers/overlay-renderer");
 const { candidateViewToProductRecord } = require("./candidate-store/product-record");
-const { normalizePageMode } = require("./candidate-store/product-lifecycle");
+const { normalizePageMode, hasAuctionEnded } = require("./candidate-store/product-lifecycle");
+const { SITE_NAME, buildSiteGraphNodes } = require("./site-identity");
+const { renderSiteNav, renderSiteHeadTags } = require("./renderers/site-layout");
+
+const DETAIL_NAV_STYLES = `<style>
+      .site-nav--detail { display: flex; justify-content: center; padding: 0 16px 8px; }
+      .site-nav--detail ul { display: flex; flex-wrap: wrap; gap: 6px 18px; list-style: none; margin: 0; padding: 0; font: 600 14px/1.4 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .site-nav--detail a { color: #374151; text-decoration: none; }
+      .site-nav--detail a:hover { color: #0044ff; }
+      .candidate-breadcrumbs--visible { max-width: 960px; margin: 0 auto; padding: 4px 20px 0; font: 13px/1.5 Inter, -apple-system, sans-serif; color: #6b7280; }
+      .candidate-breadcrumbs--visible a { color: #0044ff; }
+    </style>`;
 
 function renderSnatchHeader() {
-  return `<header class="site-header">${renderSnatchLogoAnchor("/experiments/intent-fetch/")}</header>`;
+  return `<header class="site-header">${renderSnatchLogoAnchor("/")}</header>${renderSiteNav(null).replace('class="site-nav"', 'class="site-nav site-nav--detail"')}`;
+}
+
+function formatEndDate(isoValue) {
+  if (!isoValue) return null;
+  const date = new Date(isoValue);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
 function escapeHtml(input) {
@@ -310,10 +328,10 @@ function buildScoreBackedEvidenceRows(candidate, scores, isAuction, intentRecord
     });
   }
 
-  if (isAuction) {
+  if (isAuction && !hasAuctionEnded(candidate)) {
     rows.push({
-      title: "Verified acquisition path",
-      detail: `Live ${provider} auction route detected and verified.`,
+      title: "Auction link",
+      detail: `Links to the ${provider} auction page for this name. Check the bid and end time there before bidding.`,
     });
   } else if (candidate.status === "available") {
     rows.push({
@@ -416,7 +434,7 @@ function formatAuctionEnd(isoValue) {
   return `Ends ${formatted} UTC`;
 }
 
-function renderSummaryStrip(candidate, scores, isAuction, stale) {
+function renderSummaryStrip(candidate, scores, isAuction, stale, inactive = false) {
   const overall = Math.round(scores.overall || 0);
   const fitContext = buildFitScoreContext(scores);
   const primaryPriceValue = isAuction
@@ -432,6 +450,13 @@ function renderSummaryStrip(candidate, scores, isAuction, stale) {
     </div>`,
   ];
 
+  if (inactive) {
+    const ended = formatEndDate(candidate.acquisitionPath?.auctionEndsAt);
+    items.push(`<div class="productSummaryItem"><span class="productSummaryLabel">Status</span><strong>Auction ended</strong></div>`);
+    if (ended) items.push(`<div class="productSummaryItem"><span class="productSummaryLabel">Ended</span><strong>${escapeHtml(ended)}</strong></div>`);
+    if (isAuction) items.push(`<div class="productSummaryItem"><span class="productSummaryLabel">Last recorded bid</span><strong>${escapeHtml(primaryPriceValue)}</strong></div>`);
+    return `<div class="productSummaryStrip">${items.join("")}</div>`;
+  }
   if (stale) {
     items.push(`<div class="productSummaryItem"><span class="productSummaryLabel">Status</span><strong>Needs refresh</strong></div>`);
   } else if (isAuction) {
@@ -488,10 +513,19 @@ function renderConsiderationsBlock(candidate) {
           </div>`;
 }
 
-function buildTrustRowHtml(candidate, isAuction, stale) {
+function buildTrustRowHtml(candidate, isAuction, stale, inactive = false) {
   const primaryPriceValue = isAuction
     ? formatUsd(candidate.acquisitionPath?.currentBid)
     : formatUsd(candidate.acquisitionPath?.registrationPrice);
+
+  if (inactive) {
+    const ended = formatEndDate(candidate.acquisitionPath?.auctionEndsAt);
+    return `<div class="productTrustRow">
+          <span id="candidate-status-badge">Auction ended${ended ? ` ${escapeHtml(ended)}` : ""}</span>
+          <span class="productTrustSep" aria-hidden="true">·</span>
+          <span>${escapeHtml(primaryPriceValue)} last recorded bid</span>
+        </div>`;
+  }
 
   if (stale) {
     return `<div class="productTrustRow">
@@ -605,7 +639,21 @@ function renderBestFitModule(candidate, intentRecord) {
           </div>`;
 }
 
-function renderAcquisitionModule(candidate, isAuction, stale) {
+function renderAcquisitionModule(candidate, isAuction, stale, inactive = false) {
+  if (inactive) {
+    const provider = candidate.acquisitionPath?.provider || "NameSilo";
+    const ended = formatEndDate(candidate.acquisitionPath?.auctionEndsAt);
+    return `<div class="reportAcquisitionCard reportPanel">
+            <h2 class="productSectionTitle">Auction record</h2>
+            <dl class="reportAcquisitionGrid">
+              <div><dt>Source</dt><dd>${escapeHtml(`${provider} expired-domain auction`)}</dd></div>
+              <div><dt>Status</dt><dd>Ended</dd></div>
+              ${ended ? `<div><dt>Ended</dt><dd>${escapeHtml(ended)}</dd></div>` : ""}
+              <div><dt>Last recorded bid</dt><dd>${escapeHtml(formatUsd(candidate.acquisitionPath?.currentBid))}</dd></div>
+              <div><dt>Last checked</dt><dd>${escapeHtml(formatUtc(candidate.statusVerifiedAt))} UTC</dd></div>
+            </dl>
+          </div>`;
+  }
   const provider = candidate.acquisitionPath?.provider || "NameSilo";
   const typeLabel = isAuction ? "Auction" : "Registration";
   const priceLabel = isAuction ? "Current bid" : "Registration price";
@@ -693,7 +741,7 @@ function buildSchemaDescription(candidate, intentRecord, scores) {
 
 function buildPageTitle(candidate, intentRecord) {
   const intent = resolveIntentTitleLabel(intentRecord, candidate);
-  return `${candidate.domain} — ${intent} Domain Candidate | Snatch.auction`;
+  return `${candidate.domain} — ${intent} Domain Candidate | ${SITE_NAME}`;
 }
 
 function buildPageHeadingName(candidate, intentRecord) {
@@ -707,7 +755,7 @@ function buildPageDescription(candidate, scores, intentRecord) {
 
 function buildCanonicalPageTitle(candidate) {
   const tld = resolveCandidateTld(candidate) || ".com";
-  return `${candidate.domain} — ${tld} Auction Domain | Snatch.auction`;
+  return `${candidate.domain} — ${tld} Auction Domain | ${SITE_NAME}`;
 }
 
 function buildCanonicalPageHeadingName(candidate) {
@@ -719,20 +767,23 @@ function buildCanonicalSchemaDescription(candidate, scores) {
   const overall = Math.round(scores.overall || 0);
   const tld = resolveCandidateTld(candidate) || ".com";
   const context = buildFitScoreContext(scores);
-  return `${candidate.domain} is a live ${tld} auction domain on NameSilo, scoring ${overall}/100${context ? ` with ${context}` : ""}.`;
+  return `${candidate.domain} is a ${tld} auction domain on NameSilo, scoring ${overall}/100${context ? ` with ${context}` : ""}.`;
 }
 
 function buildCanonicalHeroSubtitle(candidate) {
   const tld = resolveCandidateTld(candidate) || ".com";
-  return `Live ${tld} auction on NameSilo`;
+  const ends = formatEndDate(candidate.acquisitionPath?.auctionEndsAt);
+  return ends ? `${tld} auction on NameSilo, ends ${ends}` : `${tld} auction on NameSilo`;
 }
 
-function buildCanonicalCalibratedLine(scores) {
-  if ((scores.tldTrust ?? 0) >= 85) return "Live .com auction with verified acquisition path";
-  return "Live auction listing with verified acquisition path";
+function buildCanonicalCalibratedLine(candidate) {
+  const checked = candidate.statusVerifiedAt ? formatUtc(candidate.statusVerifiedAt) : null;
+  return checked
+    ? `Auction details last checked ${checked} UTC. Confirm the current bid on NameSilo before bidding.`
+    : "Confirm the current bid and end time on NameSilo before bidding.";
 }
 
-function buildBaseEvidenceRows(candidate, scores, isAuction) {
+function buildBaseEvidenceRows(candidate, scores, isAuction, inactive = false) {
   const rows = [];
   const terms = (candidate.matchedTerms || []).filter(Boolean);
   if (terms.length) rows.push(buildTermEvidence(terms[0], candidate));
@@ -748,10 +799,10 @@ function buildBaseEvidenceRows(candidate, scores, isAuction) {
       detail: buildTldTrustCopy(candidate, scores, []),
     });
   }
-  if (isAuction) {
+  if (isAuction && !inactive && !hasAuctionEnded(candidate)) {
     rows.push({
-      title: "Verified acquisition path",
-      detail: "Live NameSilo auction route detected and verified.",
+      title: "Auction link",
+      detail: "Links to the NameSilo auction page for this name. Check the bid and end time there before bidding.",
     });
   }
   return rows.slice(0, 4);
@@ -805,9 +856,10 @@ function resolveLifecyclePresentation(pageMode, candidate) {
     };
   }
   if (normalized === "ended" || normalized === "archived") {
+    const ended = formatEndDate(candidate?.acquisitionPath?.auctionEndsAt);
     return {
-      heroSubtitle: "Auction ended",
-      calibratedLine: "This auction listing is no longer active.",
+      heroSubtitle: ended ? `Auction ended ${ended}` : "Auction ended",
+      calibratedLine: `The NameSilo auction for ${candidate?.domain || "this name"} ${ended ? `ended on ${ended} (UTC)` : "has ended"}. This page keeps the last recorded details for reference; the name cannot be bought here.`,
       ctaDisabled: true,
       acquireCtaLabel: "Auction ended",
       showAlternatives: true,
@@ -815,7 +867,7 @@ function resolveLifecyclePresentation(pageMode, candidate) {
   }
   return {
     heroSubtitle: buildCanonicalHeroSubtitle(candidate),
-    calibratedLine: buildCanonicalCalibratedLine(candidate.scores || {}),
+    calibratedLine: buildCanonicalCalibratedLine(candidate),
     ctaDisabled: false,
     acquireCtaLabel: null,
     showAlternatives: false,
@@ -899,32 +951,19 @@ function buildCandidateJsonLd(candidate, canonicalUrl, ogImage, stale, matchedIn
     image: [ogImage],
     sku: candidate.candidateId,
     category: "Domain name",
-    brand: { "@type": "Brand", name: candidate.domain },
     applicationCategory,
     keywords,
   };
 
   const graph = [
-    {
-      "@type": "Organization",
-      "@id": `${metadataBaseUrl}/#organization`,
-      name: "Snatch.auction",
-      url: `${metadataBaseUrl}/`,
-    },
-    {
-      "@type": "WebSite",
-      "@id": `${metadataBaseUrl}/#website`,
-      url: `${metadataBaseUrl}/`,
-      name: "Snatch.auction",
-      publisher: { "@id": `${metadataBaseUrl}/#organization` },
-    },
-    { ...webpage, about: { "@id": `${canonicalUrl}#product` } },
+    ...buildSiteGraphNodes(metadataBaseUrl, { includeNameSilo: true }),
+    { ...webpage, about: { "@id": `${canonicalUrl}#product` }, publisher: { "@id": `${metadataBaseUrl}/#organization` } },
     {
       "@type": "BreadcrumbList",
       "@id": `${canonicalUrl}#breadcrumbs`,
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: `${metadataBaseUrl}/` },
-        { "@type": "ListItem", position: 2, name: "Domain candidates", item: `${metadataBaseUrl}/domains` },
+        { "@type": "ListItem", position: 2, name: "Domain listings", item: `${metadataBaseUrl}/data/domain-listings` },
         { "@type": "ListItem", position: 3, name: candidate.domain, item: canonicalUrl },
       ],
     },
@@ -936,9 +975,11 @@ function buildCandidateJsonLd(candidate, canonicalUrl, ogImage, stale, matchedIn
   }
 
   const productIndex = graph.findIndex((node) => node["@type"] === "Product");
+  const auctionEnded = hasAuctionEnded(candidate);
   const hasAuctionPrice =
     isAuction &&
     !stale &&
+    !auctionEnded &&
     typeof candidate.acquisitionPath?.currentBid === "number" &&
     candidate.acquisitionPath?.priceCurrency;
   const hasRegistrationPrice =
@@ -956,7 +997,7 @@ function buildCandidateJsonLd(candidate, canonicalUrl, ogImage, stale, matchedIn
       priceCurrency: candidate.acquisitionPath.priceCurrency,
       price: candidate.acquisitionPath.currentBid,
       availability: "https://schema.org/InStock",
-      seller: { "@type": "Organization", name: "NameSilo" },
+      seller: { "@id": `${metadataBaseUrl}/#provider-namesilo` },
       validThrough: candidate.acquisitionPath?.auctionEndsAt || candidate.statusExpiresAt,
       description: candidate.catch || "Current bid is not the final sale price.",
       businessFunction: "http://purl.org/goodrelations/v1#Sell",
@@ -979,7 +1020,7 @@ function buildCandidateJsonLd(candidate, canonicalUrl, ogImage, stale, matchedIn
       priceCurrency: candidate.acquisitionPath.priceCurrency,
       price: candidate.acquisitionPath.registrationPrice,
       availability: "https://schema.org/InStock",
-      seller: { "@type": "Organization", name: "NameSilo" },
+      seller: { "@id": `${metadataBaseUrl}/#provider-namesilo` },
       validThrough: candidate.statusExpiresAt,
     };
   }
@@ -1217,7 +1258,9 @@ function renderSessionRecommendationPage(candidate, pageContext = {}, options = 
     <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
     <meta property="og:image" content="${escapeHtml(ogImage)}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${escapeHtml(candidate.domain)} | Snatch.auction" />
+    <meta name="twitter:title" content="${escapeHtml(candidate.domain)} | ${escapeHtml(SITE_NAME)}" />
+    ${renderSiteHeadTags(metadataBaseUrl, { includeGraph: false })}
+    ${DETAIL_NAV_STYLES}
     <meta name="twitter:description" content="${escapeHtml(pageDescription)}" />
     <meta name="twitter:image" content="${escapeHtml(ogImage)}" />
     <link rel="alternate" type="application/json" href="${escapeHtml(alternateApiHref)}" title="Decision Candidate JSON" />
@@ -1306,22 +1349,22 @@ function renderCanonicalDomainPage(candidate, pageContext = {}, options = {}) {
   const isAuction = candidate.source === "namesilo-auction" || candidate.acquisitionPath?.type === "auction";
   const heroSubtitle = lifecycle.heroSubtitle;
   const calibratedLine = lifecycle.calibratedLine;
-  const summaryStripHtml = renderSummaryStrip(candidate, scores, isAuction, stale);
+  const summaryStripHtml = renderSummaryStrip(candidate, scores, isAuction, stale, inactive);
   const decisionCardHtml = renderDecisionCard(candidate, stale, scores);
   const considerationsHtml = renderConsiderationsBlock(candidate);
-  const evidenceRowsHtml = buildBaseEvidenceRows(candidate, scores, isAuction)
+  const evidenceRowsHtml = buildBaseEvidenceRows(candidate, scores, isAuction, inactive)
     .map(
       (row) =>
         `<li class="evidenceItem"><span class="evidenceMark" aria-hidden="true"></span><div class="evidenceCopy"><strong class="evidenceTitle">${escapeHtml(row.title)}</strong><p class="evidenceDetail">${escapeHtml(row.detail)}</p></div></li>`
     )
     .join("");
   const scoreBreakdownHtml = renderCompactScoreBreakdown(scores);
-  const acquisitionHtml = renderAcquisitionModule(candidate, isAuction, stale);
+  const acquisitionHtml = renderAcquisitionModule(candidate, isAuction, stale, inactive);
   const primaryPriceValue = isAuction
     ? formatUsd(candidate.acquisitionPath?.currentBid)
     : formatUsd(candidate.acquisitionPath?.registrationPrice);
   const acquireCtaLabel = lifecycle.acquireCtaLabel || buildAcquireCtaLabel(isAuction, primaryPriceValue, stale);
-  const trustRowHtml = buildTrustRowHtml(candidate, isAuction, stale);
+  const trustRowHtml = buildTrustRowHtml(candidate, isAuction, stale, inactive);
   const ctaDisclaimersHtml = renderCtaDisclaimers(isAuction, stale);
   const acquireHref = stale || lifecycle.ctaDisabled
     ? "#"
@@ -1386,7 +1429,9 @@ function renderCanonicalDomainPage(candidate, pageContext = {}, options = {}) {
     <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
     <meta property="og:image" content="${escapeHtml(ogImage)}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${escapeHtml(candidate.domain)} | Snatch.auction" />
+    <meta name="twitter:title" content="${escapeHtml(candidate.domain)} | ${escapeHtml(SITE_NAME)}" />
+    ${renderSiteHeadTags(metadataBaseUrl, { includeGraph: false })}
+    ${DETAIL_NAV_STYLES}
     <meta name="twitter:description" content="${escapeHtml(pageDescription)}" />
     <meta name="twitter:image" content="${escapeHtml(ogImage)}" />
     <link rel="alternate" type="application/json" href="${escapeHtml(`${metadataBaseUrl}/api/domains/${slug}/graph.json`)}" title="Domain Product Graph" />
@@ -1399,8 +1444,8 @@ function renderCanonicalDomainPage(candidate, pageContext = {}, options = {}) {
     <main id="main-content" class="domainPageMain" data-candidate-id="${escapeHtml(candidate.candidateId)}" data-domain="${escapeHtml(
     candidate.domain
   )}" data-status="${escapeHtml(visibleStatus)}" data-source="${escapeHtml(candidate.source)}" data-page-mode="canonical">
-      <nav aria-label="Breadcrumb" class="breadcrumbs candidate-breadcrumbs sr-only">
-        <a href="/">Home</a> / <a href="/domains">Domain candidates</a> / <span aria-current="page">${escapeHtml(candidate.domain)}</span>
+      <nav aria-label="Breadcrumb" class="breadcrumbs candidate-breadcrumbs candidate-breadcrumbs--visible">
+        <a href="/">Home</a> › <a href="/data/domain-listings">Domain listings</a> › <span aria-current="page">${escapeHtml(candidate.domain)}</span>
       </nav>
       <section class="productHeroStage">
         <div class="detailContent">

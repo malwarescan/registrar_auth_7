@@ -7,8 +7,19 @@ const {
   resolveProductPageMode,
   shouldReturnGone,
 } = require("./product-lifecycle");
+const { validateSitemapEligibility } = require("./sitemap-freshness");
 
-function resolveDomainPage(slug, pageContext = {}, findSessionCandidateBySlug) {
+// Robots and sitemap come from the same rule: a page is indexable only when
+// the record would also be listed in the domain sitemap.
+function resolveIndexedMode(record, mode, options = {}) {
+  if (mode !== "active-indexed") return mode;
+  const rejection = validateSitemapEligibility(record, options.now ?? Date.now(), {
+    metadataBaseUrl: options.metadataBaseUrl,
+  });
+  return rejection ? "active-noindex" : mode;
+}
+
+function resolveDomainPage(slug, pageContext = {}, findSessionCandidateBySlug, options = {}) {
   const normalized = normalizeSlug(slug);
   if (!normalized) return null;
 
@@ -31,7 +42,7 @@ function resolveDomainPage(slug, pageContext = {}, findSessionCandidateBySlug) {
       };
     }
 
-    const mode = resolveProductPageMode(durable, pageContext);
+    const mode = resolveIndexedMode(durable, resolveProductPageMode(durable, pageContext), options);
     return {
       mode,
       candidate: baseCandidate,
@@ -54,5 +65,6 @@ function resolveDomainPage(slug, pageContext = {}, findSessionCandidateBySlug) {
 }
 
 module.exports = {
+  resolveIndexedMode,
   resolveDomainPage,
 };

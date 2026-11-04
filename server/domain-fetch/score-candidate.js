@@ -42,6 +42,7 @@ function isEligibleCandidate(candidate) {
     && candidate.scores.pronounceability >= 55
     && candidate.scores.categoryClarity >= 50
     && !candidate.qualityFlags.includes("gibberish")
+    && !candidate.qualityFlags.includes("random-string")
     && !candidate.qualityFlags.includes("accidental-substring-match")
     && Array.isArray(candidate.buyerFit)
     && candidate.buyerFit.length > 0;

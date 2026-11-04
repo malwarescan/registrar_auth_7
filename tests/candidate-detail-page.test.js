@@ -90,7 +90,7 @@ function sampleCandidate(overrides = {}) {
       currentBid: 1,
       priceCurrency: "USD",
       actionUrl: "https://www.namesilo.com/domain/search-domains?query=anudesk.com",
-      auctionEndsAt: "2026-06-12T08:00:00.000Z",
+      auctionEndsAt: new Date(Date.now() + 86400000).toISOString(),
       bidCount: 1,
       priceType: "current-bid",
     },

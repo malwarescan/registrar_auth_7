@@ -2,8 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 
-function resolveLifecycleState(record) {
-  return require("./product-lifecycle").resolveLifecycleState(record);
+function resolveLifecycleState(record, now) {
+  return require("./product-lifecycle").resolveLifecycleState(record, now);
 }
 
 function buildDomainProductGraphRef() {
@@ -17,7 +17,7 @@ const SEO_TIER = {
 };
 
 const MIN_OVERALL_SCORE = 55;
-const BLOCKING_QUALITY_FLAGS = new Set(["gibberish", "excessive-length", "spam"]);
+const BLOCKING_QUALITY_FLAGS = new Set(["gibberish", "excessive-length", "spam", "random-string"]);
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -52,10 +52,10 @@ function hasProductAsset(record, assetsDir) {
   return true;
 }
 
-function resolveSeoTier(record) {
+function resolveSeoTier(record, now = Date.now()) {
   if (!record?.domain) return SEO_TIER.ARCHIVE;
 
-  const lifecycle = resolveLifecycleState(record);
+  const lifecycle = resolveLifecycleState(record, now);
   if (lifecycle !== "active") return SEO_TIER.ARCHIVE;
 
   if (record.seoTier === SEO_TIER.INDEX_NOW) return SEO_TIER.INDEX_NOW;
@@ -66,8 +66,8 @@ function resolveSeoTier(record) {
   return SEO_TIER.HOLD_NOINDEX;
 }
 
-function isIndexNowTier(record) {
-  return resolveSeoTier(record) === SEO_TIER.INDEX_NOW;
+function isIndexNowTier(record, now = Date.now()) {
+  return resolveSeoTier(record, now) === SEO_TIER.INDEX_NOW;
 }
 
 function defaultSeoTierForRecord(existing) {
@@ -112,7 +112,7 @@ function validateIndexNowEligibility(record, now = Date.now(), options = {}) {
   if (!record.canonicalUrl || record.canonicalUrl.includes("?")) return "Invalid canonical URL";
   if (record.status !== "auction-active") return `Status must be auction-active (got ${record.status || "unknown"})`;
   if (!resolveAcquisitionUrl(record)) return "Missing acquisition URL";
-  if (resolveLifecycleState(record) !== "active") return "Lifecycle must be active";
+  if (resolveLifecycleState(record, now) !== "active") return "Lifecycle must be active";
 
   const expiresAt = record.statusExpiresAt ? new Date(record.statusExpiresAt).getTime() : 0;
   if (!expiresAt || Number.isNaN(expiresAt) || expiresAt <= now) return "statusExpiresAt must be in the future";

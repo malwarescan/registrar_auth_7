@@ -1,6 +1,7 @@
 const { buildDomainProductGraph } = require("../candidate-store/domain-graph");
 const { normalizePageMode } = require("../candidate-store/product-lifecycle");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
+const { SITE_NAME } = require("../site-identity");
 
 const ROBOTS_SUFFIX = "max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
@@ -8,22 +9,31 @@ function resolveTld(record) {
   return record?.tld || ".com";
 }
 
+function formatEndDate(isoValue) {
+  if (!isoValue) return null;
+  const date = new Date(isoValue);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
 function buildSeoTitle(record, mode) {
   if (mode === "session") return null;
   const tld = resolveTld(record);
-  return `${record.domain} — ${tld} Auction Domain | Snatch.auction`;
+  if (["ended", "archived"].includes(normalizePageMode(mode))) return `${record.domain} — Ended ${tld} Auction | ${SITE_NAME}`;
+  return `${record.domain} — ${tld} Auction Domain | ${SITE_NAME}`;
 }
 
 function buildSeoDescription(record, mode) {
   const tld = resolveTld(record);
   const normalized = normalizePageMode(mode);
   if (normalized === "sold") {
-    return `${record.domain} is a ${tld} auction domain that has sold. Snatch retains the product record with final known auction status.`;
+    return `${record.domain} is a ${tld} auction domain that has sold. ${SITE_NAME} keeps the record with the final known auction status.`;
   }
   if (normalized === "ended" || normalized === "unavailable") {
-    return `${record.domain} is a ${tld} auction domain listing that is no longer active on NameSilo. Review final status and comparable domains on Snatch.auction.`;
+    const ended = formatEndDate(record.auctionEndsAt ?? record.acquisitionPath?.auctionEndsAt);
+    return `The NameSilo auction for ${record.domain} ended${ended ? ` on ${ended}` : ""}. ${SITE_NAME} keeps the last recorded bid, end date and name-quality scores for reference.`;
   }
-  return `${record.domain} is a ${tld} auction domain available through NameSilo, with current bid data, auction timing, and Snatch domain quality signals.`;
+  return `${record.domain} is a ${tld} auction domain available through NameSilo, with the recorded bid, end time and ${SITE_NAME} name-quality scores.`;
 }
 
 function buildCanonicalUrl(record, mode, options = {}) {
@@ -56,7 +66,9 @@ function buildSeoJsonLd(record, mode, options = {}) {
     if (!node?.["@type"]) return false;
     if (SEO_GRAPH_TYPES.has(node["@type"])) {
       if (node["@type"] === "Organization") {
-        return String(node["@id"] || "").includes("/#organization");
+        // Keep the site Organization and the NameSilo node the Offer.seller references.
+        const id = String(node["@id"] || "");
+        return id.includes("/#organization") || id.includes("/#provider-namesilo");
       }
       return true;
     }
@@ -103,7 +115,7 @@ function buildSeoRenderData(record, pageMode, options = {}) {
     canonicalUrl: buildCanonicalUrl(record, mode, options),
     robots: buildRobots(record, mode),
     jsonLd: buildSeoJsonLd(record, mode, { ...options, stale }),
-    twitterTitle: `${record.domain} | Snatch.auction`,
+    twitterTitle: `${record.domain} | ${SITE_NAME}`,
   };
 }
 

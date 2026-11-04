@@ -4,11 +4,26 @@ function resolveSeoTier(record) {
   return require("./seo-tier").resolveSeoTier(record);
 }
 
-function isIndexNowTier(record) {
-  return require("./seo-tier").isIndexNowTier(record);
+function isIndexNowTier(record, now) {
+  return require("./seo-tier").isIndexNowTier(record, now);
 }
 
-function resolveLifecycleState(record) {
+// Auction status is stored at ingest time, but auctions end on a schedule.
+// Re-derive it at read time so an auction whose end time has passed is never
+// presented as live, indexable or in stock.
+function hasAuctionEnded(record, now = Date.now()) {
+  const endsAt = record?.auctionEndsAt ?? record?.acquisitionPath?.auctionEndsAt;
+  if (!endsAt) return false;
+  const ends = new Date(endsAt).getTime();
+  return Number.isFinite(ends) && ends <= now;
+}
+
+function resolveEffectiveStatus(record, now = Date.now()) {
+  if (record?.status === "auction-active" && hasAuctionEnded(record, now)) return "auction-ended";
+  return record?.status;
+}
+
+function resolveLifecycleState(record, now = Date.now()) {
   if (!record?.domain) return "invalid";
   if (record.invalid === true || record.gone === true) return "invalid";
   if ((record.qualityFlags || []).some((flag) => BLOCKING_INVALID_FLAGS.has(flag))) return "invalid";
@@ -17,6 +32,7 @@ function resolveLifecycleState(record) {
   if (explicit === "sold" || record.status === "auction-sold") return "sold";
   if (explicit === "unavailable") return "unavailable";
   if (record.status === "auction-ended" || record.status === "archived") return "ended";
+  if (hasAuctionEnded(record, now)) return "ended";
   if (record.status === "auction-active") return "active";
   if (explicit === "active") return "active";
   if (explicit === "ended") return "ended";
@@ -79,6 +95,8 @@ function shouldReturnGone(record) {
 }
 
 module.exports = {
+  hasAuctionEnded,
+  resolveEffectiveStatus,
   resolveLifecycleState,
   resolveProductPageMode,
   normalizePageMode,

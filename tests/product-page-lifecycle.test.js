@@ -113,8 +113,8 @@ test("ended auction page renders 200 with disabled CTA", () => {
 test("sold and unavailable pages are removed from active sitemap", () => {
   const tempDir = makeTempStore();
   try {
-    const active = upsertProductRecordFromAuction(sampleAuction("indexed.com", { currentBid: 10 }));
-    promoteCandidate("indexed-com");
+    const active = upsertProductRecordFromAuction(sampleAuction("indexedshop.com", { currentBid: 10 }));
+    promoteCandidate("indexedshop-com");
     upsertProductRecord({
       ...upsertProductRecordFromAuction(sampleAuction("soldlot.com")),
       lifecycleState: "sold",
@@ -131,7 +131,7 @@ test("sold and unavailable pages are removed from active sitemap", () => {
     });
 
     const sitemapPaths = getIndexedDomainSitemapPaths();
-    assert.ok(sitemapPaths.includes("/domains/indexed-com"));
+    assert.ok(sitemapPaths.includes("/domains/indexedshop-com"));
     assert.equal(sitemapPaths.includes("/domains/soldlot-com"), false);
     assert.equal(sitemapPaths.includes("/domains/missing-com"), false);
     assert.equal(listSitemapCandidates().length, 1);
@@ -143,10 +143,10 @@ test("sold and unavailable pages are removed from active sitemap", () => {
 test("overlay on indexable durable page stays noindex with bare canonical", () => {
   const tempDir = makeTempStore();
   try {
-    upsertProductRecordFromAuction(sampleAuction("overlayme.com", { currentBid: 10 }));
-    promoteCandidate("overlayme-com");
-    const base = resolveDomainPage("overlayme-com", {}, () => null);
-    const resolved = resolveDomainPage("overlayme-com", { intentId: "intent-qa" }, () => null);
+    upsertProductRecordFromAuction(sampleAuction("overlaydesk.com", { currentBid: 10 }));
+    promoteCandidate("overlaydesk-com");
+    const base = resolveDomainPage("overlaydesk-com", {}, () => null);
+    const resolved = resolveDomainPage("overlaydesk-com", { intentId: "intent-qa" }, () => null);
     assert.equal(resolved.mode, "overlay");
     const html = renderCandidatePageHtml(resolved.sessionCandidate, { intentId: "intent-qa" }, {
       pageMode: "overlay",
@@ -156,7 +156,7 @@ test("overlay on indexable durable page stays noindex with bare canonical", () =
       isProduction: false,
     });
     assert.match(html, /meta name="robots" content="noindex,follow/);
-    assert.match(html, /link rel="canonical" href="https:\/\/urlsnatcher\.com\/domains\/overlayme-com"/);
+    assert.match(html, /link rel="canonical" href="https:\/\/urlsnatcher\.com\/domains\/overlaydesk-com"/);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -183,12 +183,12 @@ test("refresh updates bid and status without changing canonical URL", () => {
 test("sitemap only includes active indexable graph-complete records", () => {
   const tempDir = makeTempStore();
   try {
-    upsertProductRecordFromAuction(sampleAuction("visible.com", { currentBid: 10 }));
+    upsertProductRecordFromAuction(sampleAuction("visibleshop.com", { currentBid: 10 }));
     upsertProductRecordFromAuction(sampleAuction("hidden.com", { currentBid: 2 }));
-    promoteCandidate("visible-com");
+    promoteCandidate("visibleshop-com");
 
     const paths = getIndexedDomainSitemapPaths();
-    assert.ok(paths.includes("/domains/visible-com"));
+    assert.ok(paths.includes("/domains/visibleshop-com"));
     assert.equal(paths.includes("/domains/hidden-com"), false);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });

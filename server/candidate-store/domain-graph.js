@@ -1,6 +1,7 @@
 const { buildGraphId } = require("./product-record");
 const { resolveLifecycleState } = require("./product-lifecycle");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
+const { SITE_NAME, buildOrganizationNode, buildWebSiteNode, buildNameSiloNode, namesiloId } = require("../site-identity");
 
 function recordIsIndexNow(record) {
   if (!record?.domain) return false;
@@ -17,27 +18,9 @@ function buildDomainProductGraph(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_U
   const graphId = record.graphId || buildGraphId(record.slug);
   const scores = record.baseScores || {};
 
-  const snatchOrganization = {
-    "@type": "Organization",
-    "@id": `${metadataBaseUrl}/#organization`,
-    name: "Snatch.auction",
-    url: `${metadataBaseUrl}/`,
-  };
-
-  const snatchWebSite = {
-    "@type": "WebSite",
-    "@id": `${metadataBaseUrl}/#website`,
-    url: `${metadataBaseUrl}/`,
-    name: "Snatch.auction",
-    publisher: { "@id": `${metadataBaseUrl}/#organization` },
-  };
-
-  const providerNode = {
-    "@type": "Organization",
-    "@id": `${metadataBaseUrl}/#provider-namesilo`,
-    name: record.provider || "NameSilo",
-    url: "https://www.namesilo.com/",
-  };
+  const snatchOrganization = buildOrganizationNode(metadataBaseUrl);
+  const snatchWebSite = buildWebSiteNode(metadataBaseUrl);
+  const providerNode = buildNameSiloNode(metadataBaseUrl);
 
   const tldNode = {
     "@type": "DefinedTerm",
@@ -77,7 +60,10 @@ function buildDomainProductGraph(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_U
 
   const lifecycleState = resolveLifecycleState(record);
 
-  const seoDescription = `${record.domain} is a ${record.tld || ".com"} auction domain available through NameSilo, with current bid data, auction timing, and Snatch domain quality signals.`;
+  const seoDescription =
+    lifecycleState === "active"
+      ? `${record.domain} is a ${record.tld || ".com"} auction domain available through NameSilo, with the recorded bid, end time and ${SITE_NAME} name-quality scores.`
+      : `${record.domain} was a ${record.tld || ".com"} expired-domain auction on NameSilo. The auction has ended; this record keeps the last known details and scores.`;
 
   const productNode = {
     "@type": "Product",
@@ -85,7 +71,6 @@ function buildDomainProductGraph(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_U
     name: record.domain,
     sku: record.candidateId || `product_${record.slug}`,
     category: "Domain name",
-    brand: { "@type": "Brand", name: record.domain },
     description: seoDescription,
     additionalProperty: [
       { "@type": "PropertyValue", name: "tldTrust", value: scores.tldTrust },
@@ -103,6 +88,7 @@ function buildDomainProductGraph(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_U
     name: `${record.domain} — ${record.tld || ".com"} Auction Domain`,
     description: seoDescription,
     isPartOf: { "@id": `${metadataBaseUrl}/#website` },
+    publisher: { "@id": `${metadataBaseUrl}/#organization` },
     about: { "@id": `${canonicalUrl}#product` },
     dateModified: record.statusVerifiedAt,
   };
@@ -112,7 +98,7 @@ function buildDomainProductGraph(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_U
     "@id": `${canonicalUrl}#breadcrumbs`,
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: `${metadataBaseUrl}/` },
-      { "@type": "ListItem", position: 2, name: "Domain candidates", item: `${metadataBaseUrl}/domains` },
+      { "@type": "ListItem", position: 2, name: "Domain listings", item: `${metadataBaseUrl}/data/domain-listings` },
       { "@type": "ListItem", position: 3, name: record.domain, item: canonicalUrl },
     ],
   };
@@ -126,7 +112,7 @@ function buildDomainProductGraph(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_U
       priceCurrency: record.acquisitionPath.priceCurrency || "USD",
       price: record.currentBid,
       availability: "https://schema.org/InStock",
-      seller: { "@id": `${metadataBaseUrl}/#provider-namesilo` },
+      seller: { "@id": namesiloId(metadataBaseUrl) },
       validThrough: record.auctionEndsAt,
       description: "Current bid is not the final sale price.",
     };
@@ -141,7 +127,7 @@ function buildDomainProductGraph(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_U
       priceCurrency: record.acquisitionPath?.priceCurrency || "USD",
       price: record.currentBid,
       availability: lifecycleState === "sold" ? "https://schema.org/SoldOut" : "https://schema.org/Discontinued",
-      seller: { "@id": `${metadataBaseUrl}/#provider-namesilo` },
+      seller: { "@id": namesiloId(metadataBaseUrl) },
       description: lifecycleState === "sold" ? "Auction sold." : "Auction ended.",
     };
     productNode.offers = { "@id": `${canonicalUrl}#offer` };

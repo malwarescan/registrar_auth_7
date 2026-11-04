@@ -73,15 +73,15 @@ test("homepage dataset schema references listing feed download", () => {
 test("feed landing page includes Dataset and DataFeed schema", () => {
   const tempDir = makeTempStore();
   try {
-    seedFreshRecord("datalanding.com");
-    promoteCandidate("datalanding-com");
+    seedFreshRecord("datalandingshop.com");
+    promoteCandidate("datalandingshop-com");
     const html = renderFeedLandingPage("domain-listings", "https://urlsnatcher.com");
     assert.match(html, /<title>Domain Listings Feed \| Snatch Data<\/title>/);
     assert.match(html, /application\/ld\+json/);
     assert.match(html, /"@type":"Dataset"/);
     assert.match(html, /"@type":"DataFeed"/);
     assert.match(html, /\/api\/domain-listings\.ndjson/);
-    assert.match(html, /datalanding\.com/);
+    assert.match(html, /datalandingshop\.com/);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

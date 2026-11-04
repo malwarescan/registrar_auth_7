@@ -23,8 +23,8 @@ function getSitemapFreshnessMs() {
 
 function isSitemapFresh(record, now = Date.now()) {
   if (!record?.domain || !record.slug) return false;
-  if (resolveLifecycleState(record) !== "active") return false;
-  if (!isIndexNowTier(record)) return false;
+  if (resolveLifecycleState(record, now) !== "active") return false;
+  if (!isIndexNowTier(record, now)) return false;
   if (!record.canonicalUrl || record.canonicalUrl.includes("?")) return false;
   if (!resolveAcquisitionUrl(record)) return false;
   if (record.status !== "auction-active") return false;
@@ -45,8 +45,8 @@ function validateSitemapEligibility(record, now = Date.now(), options = {}) {
   if (!record) return "Candidate not found";
   if (!record.domain) return "Missing domain";
   if (!isSitemapFresh(record, now)) {
-    if (resolveLifecycleState(record) !== "active") return "Lifecycle must be active";
-    if (!isIndexNowTier(record)) return "Must be index-now tier";
+    if (resolveLifecycleState(record, now) !== "active") return "Lifecycle must be active";
+    if (!isIndexNowTier(record, now)) return "Must be index-now tier";
     if (!record.canonicalUrl || record.canonicalUrl.includes("?")) return "Invalid canonical URL";
     if (record.status !== "auction-active") return `Status must be auction-active (got ${record.status || "unknown"})`;
     if (!resolveAcquisitionUrl(record)) return "Missing acquisition URL";

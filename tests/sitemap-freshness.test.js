@@ -140,7 +140,11 @@ test("index-now batch store keeps sitemap populated after short TTL expiry", () 
     }
   }
   const candidates = listSitemapCandidates({ now });
-  assert.equal(candidates.length, 500);
+  // Every index-now record in the shipped batch stays listed; records demoted by
+  // the quality gate (random strings, no category context) are hold-noindex.
+  const indexNow = Object.values(batch).filter((record) => record.seoTier === "index-now").length;
+  assert.ok(indexNow > 0);
+  assert.equal(candidates.length, indexNow);
 });
 
 test("missing domain image resolves to default OG asset URL", () => {

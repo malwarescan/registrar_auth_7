@@ -18,8 +18,10 @@ export {
   WORDMARK_PERIOD_RADIUS,
 } from "./wordmark-metrics";
 
-/** Lowercase “snatch.” — period meshes to 3 loading dots, then merges back. */
-export function SnatchWordmarkSvg({ className = "snatchLogoMark", title = "snatch" }) {
+import { getSiteName } from "../../site-name";
+
+/** Site-name wordmark; the period meshes to 3 loading dots, then merges back. */
+export function SnatchWordmarkSvg({ className = "snatchLogoMark", title = getSiteName() }) {
   const textRef = useRef(null);
   const [layout, setLayout] = useState(null);
 
@@ -41,7 +43,8 @@ export function SnatchWordmarkSvg({ className = "snatchLogoMark", title = "snatc
 
   const anchorX = layout?.anchorX ?? WORDMARK_PERIOD_ANCHOR_X;
   const anchorY = layout?.anchorY ?? WORDMARK_PERIOD_ANCHOR_Y;
-  const viewWidth = layout?.viewWidth ?? WORDMARK_FALLBACK_VIEW_WIDTH;
+  // Before the text is measured, size the view box from the name's length.
+  const viewWidth = layout?.viewWidth ?? Math.max(WORDMARK_FALLBACK_VIEW_WIDTH, Math.ceil(String(title).length * 9.2 + 12));
   const viewBox = `0 0 ${viewWidth} ${WORDMARK_VIEWBOX_HEIGHT}`;
 
   return (
@@ -63,7 +66,7 @@ export function SnatchWordmarkSvg({ className = "snatchLogoMark", title = "snatc
         fontWeight="800"
         letterSpacing="-0.052em"
       >
-        snatch
+        {title}
       </text>
       <g className="snatchLogoPeriodGroup" transform={`translate(${anchorX} ${anchorY})`}>
         <circle

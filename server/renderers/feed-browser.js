@@ -121,6 +121,7 @@ function renderFeedBrowsePage(options = {}) {
   </head>
   <body>
     <main>
+      <p class="meta"><a class="feed-link" href="/">Home</a> › <a class="feed-link" href="/data/">Data</a></p>
       <h1>${escapeHtml(title)}</h1>
       <p>${escapeHtml(description)}</p>
       <div class="meta"><strong>${lineCount}</strong> record lines in this feed.</div>

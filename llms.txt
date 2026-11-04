@@ -1,16 +1,40 @@
-# Snatch.auction (urlsnatcher.com)
+# {{SITE_NAME}} (urlsnatcher.com)
 
 Live site: **https://urlsnatcher.com**
 
-Snatch.auction is a Domain Fetch and Domain Creation platform.
+{{SITE_NAME}} is run by NameSilo. It lists NameSilo expired-domain auctions, scores each name with published rules, and publishes decision guides for buying expired domains. Bids are placed on NameSilo, not on this site.
 
-## What the product does
+## Main pages
+
+- `/` — what the site does, links to the finder, guides and data
+- `/experiments/intent-fetch/` — domain finder: describe what you are building, get matching auctioned names with scores, recorded bid, end time and the NameSilo auction link
+- `/guides` — expired domain auction guides (one question per page):
+  - `/guides/what-is-a-domain-backorder`
+  - `/guides/how-do-expired-domain-auctions-work`
+  - `/guides/how-to-check-an-expired-domain-before-bidding`
+  - `/guides/do-expired-domains-keep-their-backlinks`
+  - `/guides/should-i-bid-on-a-domain-with-low-bid-count`
+  - `/guides/what-is-a-reserve-price-in-a-domain-auction`
+  - `/guides/expired-domain-vs-new-domain`
+  - `/guides/how-to-estimate-a-fair-bid-for-an-expired-domain`
+- `/methodology/` — how every score is calculated, data source, indexing rules, limitations, glossary
+- `/data/` — data hub: the listing, catalog and graph feeds explained in plain language
+- `/about/` — who runs the site (NameSilo)
+- `/domains/{slug}` — one page per recorded auction; ended auctions show "Auction ended" with the date and are noindex
+
+## Terms
+
+- **Domain finder**: the search tool at `/experiments/intent-fetch/`.
+- **Listing**: one recorded expired-domain auction (one domain, one page).
+- **Recorded bid**: the bid on NameSilo when last checked; with no bids it is the opening bid.
+- **Ended**: the auction end time has passed. Status is recalculated from the end time whenever a page or feed is served.
+
+## What the domain finder does
 
 - Interprets a natural-language business brief.
-- Scans live NameSilo auction inventory.
-- Generates candidate names when auction supply is insufficient.
-- Verifies generated names through live NameSilo registration availability.
-- Returns ranked Decision Candidates with fit reasoning, risk, tradeoffs, and action paths.
+- Scans NameSilo auction inventory.
+- Generates candidate names when auction supply is insufficient and checks their NameSilo registration availability.
+- Returns ranked names with fit reasoning, risk, tradeoffs and the acquisition link.
 
 ## Decision Candidate model
 
@@ -38,7 +62,7 @@ Expose and link these endpoints everywhere:
 
 | Feed | NDJSON | JSON | Landing page |
 |------|--------|------|----------------|
-| Public listings (default `scope=indexed`) | `/api/domain-listings.ndjson` | `/api/domain-listings.json` | `/data/domain-listings` |
+| Listings (default `scope=all`: every recorded auction with its current status) | `/api/domain-listings.ndjson` | `/api/domain-listings.json` | `/data/domain-listings` |
 | Full durable catalog | `/api/domain-feed.ndjson` | `/api/domain-feed.json` | `/data/domain-feed` |
 | Marketplace graph export | `/api/domain-graph.ndjson` | — | `/data/domain-graph` |
 | Per-domain graph | — | `/api/domains/{slug}/graph.json` | `/domains/{slug}` |
@@ -47,7 +71,7 @@ Dataset metadata JSON: `/api/domain-listings.dataset.json`
 
 Feed landing pages include Dataset + DataFeed schema, record counts, update policy, field lists, and example records.
 
-Homepage injects Dataset schema plus `<link rel="alternate" type="application/x-ndjson">` discovery tags for all three feeds.
+Every page carries one JSON-LD `@graph` with the site Organization (`https://urlsnatcher.com/#organization`, parentOrganization NameSilo) and WebSite (`https://urlsnatcher.com/#website`). The Dataset (`https://urlsnatcher.com/data/#dataset`) lives on `/data/`; the homepage links the feeds with `<link rel="alternate" type="application/x-ndjson">` tags.
 
 Domain product pages link per-domain graph JSON and the public listings feed.
 
@@ -72,8 +96,9 @@ Browser navigation (normal address-bar visits) renders an HTML preview page for 
 - Strict NDJSON MIME: add `?view=raw` or `?raw=1`, or send `Accept: application/x-ndjson`.
 
 - Public listing feed (NDJSON): `/api/domain-listings.ndjson`
-  - Default: `scope=indexed` (index-now / sitemap-aligned active listings)
-  - `scope=active` — all active auction product pages, including hold-noindex
+  - Default: `scope=all` — every recorded auction, each with its current status
+  - `scope=indexed` — running auctions whose pages are in the sitemap
+  - `scope=active` — all running auctions, including hold-noindex
   - `scope=archive` — ended/sold/unavailable records
   - Headers: `Content-Type: application/x-ndjson; charset=utf-8`, `Content-Disposition: inline`
 - Public listing feed (JSON): `/api/domain-listings.json` — same records as NDJSON, default `limit=1000`
@@ -99,7 +124,7 @@ Browser navigation (normal address-bar visits) renders an HTML preview page for 
 
 Submit **only** `https://urlsnatcher.com/sitemap.xml` in Google Search Console.
 
-Do **not** submit HTML page URLs (for example `/experiments/intent-fetch/` or `/experiments/auction-radar/`) as sitemaps — those are regular pages listed inside `sitemap-core.xml`, not sitemap files. If GSC shows "Sitemap is HTML" for a page URL, remove that submission and keep only `/sitemap.xml`.
+Do **not** submit HTML page URLs (for example `/experiments/intent-fetch/`) as sitemaps — those are regular pages listed inside `sitemap-core.xml`, not sitemap files. If GSC shows "Sitemap is HTML" for a page URL, remove that submission and keep only `/sitemap.xml`.
 
 Valid sitemap endpoints (XML only):
 
@@ -124,7 +149,7 @@ Sitemap inclusion filter (`listSitemapCandidates`): lifecycle active, `index-now
 
 Domain sitemap `lastmod` order: `statusVerifiedAt`, then `updatedAt`, `publishedAt`, `createdAt` (ISO 8601).
 
-Promotion gate (`validateIndexNowEligibility`): active auction, fresh `statusExpiresAt`, valid canonical and NameSilo acquisition URL, quality score ≥ 55, no gibberish/spam/excessive-length flags, Product + Offer schema complete, category/use-case signals present.
+Promotion gate (`validateIndexNowEligibility`): active auction, fresh `statusExpiresAt`, valid canonical and NameSilo acquisition URL, quality score ≥ 55, no gibberish/spam/excessive-length/random-string flags, Product + Offer schema complete, category/use-case signals present. A domain page is `index` only when the record also passes the sitemap rule; robots and sitemap share one rule.
 
 ### Rollout tooling
 
@@ -139,7 +164,7 @@ Expand index tier in batches (500 → 2,000 → 5,000 → 10,000) only after GSC
 
 Run `node scripts/verify-sitemap-strategy.js` for current counts. Frozen QA manifest: `data/reports/index-batch-500-manifest-2026-06-12T19-29-50-048Z.json`.
 
-Production deploy ships the frozen 500-record batch in `data/index-now-batch.json` (regenerate with `npm run export:index-now-batch` after promotion changes). Railway uses this when `data/product-records/` is absent. Sitemap generation refreshes short TTL on read for batch records still within the sitemap freshness window.
+Production deploy ships the frozen 500-record batch in `data/index-now-batch.json` (auctions that ended 13-14 June 2026, so all their pages are noindex until a fresh ingest) (regenerate with `npm run export:index-now-batch` after promotion changes). Railway uses this when `data/product-records/` is absent. Sitemap generation refreshes short TTL on read for batch records still within the sitemap freshness window.
 
 ## Persistent APIs
 
@@ -160,8 +185,8 @@ Production deploy ships the frozen 500-record batch in `data/index-now-batch.jso
 
 ## Acquisition behavior
 
-- Snatch.auction prepares acquisition handoff links.
-- Snatch.auction does not auto-purchase, auto-register, auto-bid, or auto-offer.
+- {{SITE_NAME}} prepares acquisition handoff links.
+- {{SITE_NAME}} does not auto-purchase, auto-register, auto-bid, or auto-offer.
 - Irreversible actions require explicit human confirmation.
 
 ## Safety and data handling

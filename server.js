@@ -32,13 +32,18 @@ const { getMetadataBaseUrl, toPublicMetadataUrl } = require("./server/public-url
 const {
   injectHomeDiscovery,
   renderFeedLandingPage,
+  renderDataHubPage,
   resolveFeedLandingKey,
 } = require("./server/renderers/data-feed-landing");
 const { listPublishedCandidates } = require("./server/published-catalog");
 const { resolveDomainPage } = require("./server/candidate-store/resolve-domain-page");
 const { configureDefaultProductStore } = require("./server/candidate-store/store-paths");
 const { buildRobotsTxt, resolveSitemapResponse } = require("./server/sitemap");
-const { renderSnatchLogoAnchor } = require("./server/snatch-logo-markup");
+const { renderSiteLogoSvg } = require("./server/snatch-wordmark-html");
+const { SITE_NAME, applySiteTokens } = require("./server/site-identity");
+const { renderSiteHeader, renderSiteFooter, SITE_CHROME_STYLES } = require("./server/renderers/site-layout");
+const { renderMethodologyPage, renderAboutPage } = require("./server/renderers/site-pages");
+const { resolveUrlVariant } = require("./server/url-variants");
 const { renderCandidatePageHtml } = require("./server/candidate-detail-page");
 const { renderGuidePage, renderGuidesIndexPage, resolveGuideRoute } = require("./server/renderers/guides-renderer");
 const { resolveLocalProductAssetPath } = require("./server/product-asset");
@@ -111,7 +116,22 @@ function escapeHtml(input) {
 }
 
 function renderSnatchHeader() {
-  return `<header class="site-header">${renderSnatchLogoAnchor("/experiments/intent-fetch/")}</header>`;
+  return renderSiteHeader(null);
+}
+
+// Static HTML pages carry {{SITE_NAME}} tokens and header/footer markers so the
+// brand, nav and footer come from the same code as server-rendered pages.
+function renderStaticHtml(html, pathname, metadataBaseUrl) {
+  const filled = applySiteTokens(patchHtmlAssetVersions(html))
+    .replace("<!--SITE_CHROME_STYLES-->", SITE_CHROME_STYLES)
+    .replace("<!--SITE_HEADER-->", renderSiteHeader(pathname))
+    .replace("<!--SITE_FOOTER-->", renderSiteFooter());
+  return injectCanonicalLink(injectHomeDiscovery(filled, metadataBaseUrl, pathname), pathname);
+}
+
+function sendHtml(req, res, status, html, extraHeaders = {}) {
+  res.writeHead(status, { "Content-Type": "text/html; charset=utf-8", ...extraHeaders });
+  res.end(req.method === "HEAD" ? undefined : html);
 }
 
 function safePathname(inputPath) {
@@ -151,7 +171,6 @@ function patchHtmlAssetVersions(html) {
 const STATIC_CANONICAL_PATHS = {
   "/": "/",
   "/experiments/intent-fetch": "/experiments/intent-fetch/",
-  "/methodology": "/methodology/",
 };
 
 function injectCanonicalLink(html, requestPathname) {
@@ -179,7 +198,19 @@ function resolveStaticPath(pathname) {
   return filePath;
 }
 
+// Only these paths are served straight from disk. Everything else either has a
+// route above or is a 404, so leftover files in the repo never become pages.
+function isPublicStaticPath(pathname) {
+  const clean = safePathname(pathname);
+  return clean.startsWith("/assets/") || clean === "/favicon.ico";
+}
+
 function serveStatic(req, res, requestUrl) {
+  if (!isPublicStaticPath(requestUrl.pathname)) {
+    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Not found");
+    return;
+  }
   let filePath = resolveStaticPath(requestUrl.pathname);
 
   if (!filePath.startsWith(ROOT)) {
@@ -212,7 +243,7 @@ function serveStatic(req, res, requestUrl) {
     }
     const headers = staticResponseHeaders(ext);
     if (ext === ".html") {
-      const html = injectCanonicalLink(patchHtmlAssetVersions(content.toString("utf8")), requestUrl.pathname);
+      const html = injectCanonicalLink(applySiteTokens(patchHtmlAssetVersions(content.toString("utf8"))), requestUrl.pathname);
       res.writeHead(200, headers);
       res.end(html);
       return;
@@ -316,6 +347,20 @@ const server = http.createServer(async (req, res) => {
   const requestUrl = new URL(req.url || "/", `http://${host}`);
   const pathname = requestUrl.pathname.replace(/\/+$/, "") || "/";
 
+  if (req.method === "GET" || req.method === "HEAD") {
+    const variant = resolveUrlVariant(requestUrl.pathname);
+    if (variant?.type === "redirect") {
+      res.writeHead(301, { Location: `${variant.location}${requestUrl.search || ""}`, "Cache-Control": "public, max-age=3600" });
+      res.end();
+      return;
+    }
+    if (variant?.type === "gone") {
+      res.writeHead(410, { "Content-Type": "text/plain; charset=utf-8", "X-Robots-Tag": "noindex" });
+      res.end(req.method === "HEAD" ? undefined : "This page has been removed.");
+      return;
+    }
+  }
+
   if (req.method === "GET" && pathname === "/api/namesilo-auctions") {
     await handleNameSiloAuctions(req, res, requestUrl);
     return;
@@ -398,7 +443,7 @@ const server = http.createServer(async (req, res) => {
       })
       .join("");
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="robots" content="noindex,follow"/><title>Domain candidates | Snatch</title><link rel="stylesheet" href="/assets/app.css?v=dev5"/></head><body class="snatch-app">${renderSnatchHeader()}<main class="domainPageMain"><div class="snatchRail" style="padding-top:24px;"><h1>Domain candidates</h1><ul>${items || "<li>No published domain candidates yet.</li>"}</ul></div></main></body></html>`);
+    res.end(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="robots" content="noindex,follow"/><title>Domain listings | ${escapeHtml(SITE_NAME)}</title><link rel="stylesheet" href="/assets/app.css?v=dev5"/><style>body{margin:0;background:#f8f7f4}${SITE_CHROME_STYLES}</style></head><body class="snatch-app">${renderSnatchHeader()}<main class="domainPageMain"><div class="snatchRail" style="padding-top:24px;"><h1>Domain listings</h1><ul>${items || "<li>No published domain candidates yet.</li>"}</ul></div></main></body></html>`);
     return;
   }
 
@@ -483,6 +528,31 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if ((req.method === "GET" || req.method === "HEAD") && pathname === "/assets/site-logo.svg") {
+    res.writeHead(200, { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" });
+    res.end(req.method === "HEAD" ? undefined : renderSiteLogoSvg());
+    return;
+  }
+
+  if ((req.method === "GET" || req.method === "HEAD") && pathname === "/llms.txt") {
+    const body = applySiteTokens(fs.readFileSync(path.join(ROOT, "llms.txt"), "utf8"));
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=300" });
+    res.end(req.method === "HEAD" ? undefined : body);
+    return;
+  }
+
+  if ((req.method === "GET" || req.method === "HEAD") && ["/methodology", "/about", "/data"].includes(pathname)) {
+    const metadataBaseUrl = getMetadataBaseUrl({ port: PORT, isProduction: IS_PRODUCTION });
+    const html =
+      pathname === "/methodology"
+        ? renderMethodologyPage(metadataBaseUrl)
+        : pathname === "/about"
+          ? renderAboutPage(metadataBaseUrl)
+          : renderDataHubPage(metadataBaseUrl);
+    sendHtml(req, res, 200, html, { "Cache-Control": "public, max-age=300" });
+    return;
+  }
+
   const feedLandingKey = resolveFeedLandingKey(pathname);
   if (req.method === "GET" && feedLandingKey) {
     const metadataBaseUrl = getMetadataBaseUrl({ port: PORT, isProduction: IS_PRODUCTION });
@@ -513,10 +583,7 @@ const server = http.createServer(async (req, res) => {
         ? path.join(ROOT, "index.html")
         : path.join(ROOT, "experiments", "intent-fetch", "index.html");
     if (fs.existsSync(filePath)) {
-      const html = injectCanonicalLink(
-        injectHomeDiscovery(patchHtmlAssetVersions(fs.readFileSync(filePath, "utf8")), metadataBaseUrl),
-        pathname
-      );
+      const html = renderStaticHtml(fs.readFileSync(filePath, "utf8"), pathname, metadataBaseUrl);
       res.writeHead(200, staticResponseHeaders(".html"));
       res.end(req.method === "HEAD" ? undefined : html);
       return;

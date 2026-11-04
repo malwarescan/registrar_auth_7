@@ -5,11 +5,15 @@
 // site is a one-line change to SITE_NAME.
 const { DEFAULT_PUBLIC_BASE_URL } = require("./public-url");
 
-const SITE_NAME = "Snatch.auction";
+const SITE_NAME = "URL Snatcher";
+// Who runs the site. Shown in the footer, on /about/ and as parentOrganization.
+const OPERATOR_NAME = "NameSilo";
+const OPERATOR_URL = "https://www.namesilo.com";
+const OPERATOR_ID = "https://www.namesilo.com/#organization";
 const SITE_URL = DEFAULT_PUBLIC_BASE_URL;
 const SITE_DESCRIPTION =
   "Expired-domain auction finder and decision guides: search auctions by what you are building, check scores, and read how to bid.";
-const LOGO_PATH = "/assets/snatch-logo.svg";
+const LOGO_PATH = "/assets/site-logo.svg";
 
 function orgId(baseUrl = SITE_URL) {
   return `${baseUrl}/#organization`;
@@ -19,10 +23,10 @@ function websiteId(baseUrl = SITE_URL) {
   return `${baseUrl}/#website`;
 }
 
-// NameSilo is the registrar whose public expired-domain auctions the listings
-// come from. It is described only as the data source / marketplace.
-function namesiloId(baseUrl = SITE_URL) {
-  return `${baseUrl}/#provider-namesilo`;
+// NameSilo runs this site and the expired-domain auctions it lists. One node,
+// one @id, used as parentOrganization, data source and Offer seller.
+function namesiloId() {
+  return OPERATOR_ID;
 }
 
 function buildOrganizationNode(baseUrl = SITE_URL) {
@@ -39,6 +43,7 @@ function buildOrganizationNode(baseUrl = SITE_URL) {
       caption: SITE_NAME,
     },
     image: { "@id": `${baseUrl}/#logo` },
+    parentOrganization: { "@id": OPERATOR_ID },
   };
 }
 
@@ -54,27 +59,20 @@ function buildWebSiteNode(baseUrl = SITE_URL) {
   };
 }
 
-function buildNameSiloNode(baseUrl = SITE_URL) {
+function buildNameSiloNode() {
   return {
     "@type": "Organization",
-    "@id": namesiloId(baseUrl),
-    name: "NameSilo",
-    url: "https://www.namesilo.com",
-    description: "Domain registrar that runs the expired-domain auctions listed on this site.",
-    sameAs: [
-      "https://www.wikidata.org/wiki/Q96394806",
-      "https://en.wikipedia.org/wiki/NameSilo",
-      "https://www.linkedin.com/company/namesilo",
-      "https://x.com/namesilo",
-    ],
+    "@id": OPERATOR_ID,
+    name: OPERATOR_NAME,
+    url: OPERATOR_URL,
+    sameAs: ["https://en.wikipedia.org/wiki/NameSilo"],
   };
 }
 
-// Nodes every page's @graph starts with.
-function buildSiteGraphNodes(baseUrl = SITE_URL, options = {}) {
-  const nodes = [buildOrganizationNode(baseUrl), buildWebSiteNode(baseUrl)];
-  if (options.includeNameSilo) nodes.push(buildNameSiloNode(baseUrl));
-  return nodes;
+// Nodes every page's @graph starts with. NameSilo is always present because
+// the site Organization references it as parentOrganization.
+function buildSiteGraphNodes(baseUrl = SITE_URL) {
+  return [buildOrganizationNode(baseUrl), buildWebSiteNode(baseUrl), buildNameSiloNode()];
 }
 
 function publisherRef(baseUrl = SITE_URL) {
@@ -101,6 +99,9 @@ function applySiteTokens(text) {
 
 module.exports = {
   SITE_NAME,
+  OPERATOR_NAME,
+  OPERATOR_URL,
+  OPERATOR_ID,
   SITE_URL,
   SITE_DESCRIPTION,
   LOGO_PATH,

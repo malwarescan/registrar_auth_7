@@ -1,10 +1,9 @@
 const fs = require("fs");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 const { DEFAULT_BATCH_PATH } = require("../candidate-store/index-now-batch");
-const { renderSnatchLogoAnchor } = require("../snatch-logo-markup");
 const { GUIDES, SOURCES, PUBLISHED, MODIFIED, getGuide } = require("../guides/guide-content");
-
-const SITE_NAME = "Snatch.auction";
+const { SITE_NAME, orgId, websiteId } = require("../site-identity");
+const { renderPageDocument } = require("./site-layout");
 const GUIDES_INDEX_TITLE = "Expired Domain Auction Guides: Backorders, Bidding and Due Diligence";
 const GUIDES_INDEX_DESCRIPTION =
   "Decision guides for buying expired domains: how auctions and backorders work, what to check before bidding, how to set a fair maximum bid, and when a new domain is the better choice.";
@@ -82,30 +81,60 @@ function formatUsd(value) {
   return `$${Number(value).toFixed(Number.isInteger(Number(value)) ? 0 : 2)}`;
 }
 
-function renderSnapshotSection(stats) {
-  if (!stats) return "";
+function formatLongDate(iso) {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+// How the sample was drawn, stated the same way wherever the data appears.
+function describeSample(stats) {
   const provider = stats.providers.join(", ") || "registrar";
   const tld = stats.tlds.join(", ");
-  const verified =
-    stats.firstVerified === stats.lastVerified
-      ? `${formatUtcDate(stats.firstVerified)} (UTC)`
-      : `${formatUtcDate(stats.firstVerified)} to ${formatUtcDate(stats.lastVerified)} (UTC)`;
+  const sampled =
+    formatUtcDate(stats.firstVerified) === formatUtcDate(stats.lastVerified)
+      ? formatLongDate(stats.firstVerified)
+      : `${formatLongDate(stats.firstVerified)} to ${formatLongDate(stats.lastVerified)}`;
+  const ends =
+    formatUtcDate(stats.firstEnd) === formatUtcDate(stats.lastEnd)
+      ? `ending on ${formatLongDate(stats.firstEnd)}`
+      : `ending between ${formatLongDate(stats.firstEnd)} and ${formatLongDate(stats.lastEnd)}`;
+  return `Sample: ${stats.total} ${escapeHtml(provider)} expired-domain auctions (${escapeHtml(tld)} only), recorded on ${escapeHtml(sampled)} for auctions ${escapeHtml(ends)}. These are the auctions we chose to publish pages for, picked by our own name scores, not a random sample of all ${escapeHtml(provider)} auctions. Figures are as recorded on that date, before the auctions closed; all of these auctions have since ended.`;
+}
+
+function renderBidCountSection(stats) {
   return `<section class="guide-section guide-data">
         <h2>What our auction data shows</h2>
-        <p>We recorded ${stats.total} ${escapeHtml(provider)} expired-domain auctions (${escapeHtml(tld)}) on ${escapeHtml(verified)}, for auctions ending between ${escapeHtml(formatUtcDate(stats.firstEnd))} and ${escapeHtml(formatUtcDate(stats.lastEnd))}. Bids are as observed at that moment, before the auctions closed, so final prices may be higher.</p>
+        <p>${describeSample(stats)}</p>
         <table>
-          <thead><tr><th>Measure</th><th>Value</th></tr></thead>
+          <thead><tr><th>Bid activity at the time we recorded it</th><th>Auctions</th></tr></thead>
           <tbody>
-            <tr><td>Auctions with zero bids</td><td>${stats.zeroBids} of ${stats.total} (${formatPercent(stats.zeroBids, stats.total)})</td></tr>
-            <tr><td>Auctions with at least one bid</td><td>${stats.withBids} (${formatPercent(stats.withBids, stats.total)})</td></tr>
+            <tr><td>No bids yet</td><td>${stats.zeroBids} of ${stats.total} (${formatPercent(stats.zeroBids, stats.total)})</td></tr>
+            <tr><td>At least one bid</td><td>${stats.withBids} of ${stats.total} (${formatPercent(stats.withBids, stats.total)})</td></tr>
             <tr><td>Most bids on a single auction</td><td>${stats.maxBidCount}</td></tr>
-            <tr><td>Auctions at the lowest observed bid (${escapeHtml(formatUsd(stats.minPrice))})</td><td>${stats.atMinimumPrice} (${formatPercent(stats.atMinimumPrice, stats.total)})</td></tr>
-            <tr><td>Median current bid</td><td>${escapeHtml(formatUsd(stats.medianPrice))}</td></tr>
-            <tr><td>Highest current bid</td><td>${escapeHtml(formatUsd(stats.maxPrice))}</td></tr>
           </tbody>
         </table>
-        <p>Takeaway: in this sample a quiet auction was the norm, not a signal. Judge each name on its own history, fit and cost.</p>
+        <p>So a domain with no bids hours before its auction ends is in the large majority, not an outlier. A zero bid count says that few people have looked, not that something is wrong with the name; your own checks have to answer that.</p>
       </section>`;
+}
+
+function renderOpeningBidSection(stats) {
+  return `<section class="guide-section guide-data">
+        <h2>What opening bids looked like in our sample</h2>
+        <p>On ${escapeHtml(formatLongDate(stats.firstVerified))} we recorded the bids on ${stats.total} ${escapeHtml(stats.providers.join(", ") || "registrar")} ${escapeHtml(stats.tlds.join(", "))} auctions that our scores had picked for publishing (not a random draw; the sample is described in full in the <a href="/guides/should-i-bid-on-a-domain-with-low-bid-count">low bid count guide</a>). ${stats.zeroBids} of them had no bids at that point, so these amounts are almost all opening bids, not prices anyone agreed to pay. Every one of these auctions has since closed.</p>
+        <table>
+          <thead><tr><th>Recorded bid</th><th>Amount</th></tr></thead>
+          <tbody>
+            <tr><td>Lowest (seen on ${stats.atMinimumPrice} auctions)</td><td>${escapeHtml(formatUsd(stats.minPrice))}</td></tr>
+            <tr><td>Median</td><td>${escapeHtml(formatUsd(stats.medianPrice))}</td></tr>
+            <tr><td>Highest</td><td>${escapeHtml(formatUsd(stats.maxPrice))}</td></tr>
+          </tbody>
+        </table>
+        <p>An opening bid is the floor the auction starts from, not an estimate of value, so it cannot anchor your maximum. Work out your number with the method above and treat the opening bid only as the least you would pay. </p>
+      </section>`;
+}
+
+function renderSnapshotSection(stats, kind = "bid-count") {
+  if (!stats) return "";
+  return kind === "opening-bids" ? renderOpeningBidSection(stats) : renderBidCountSection(stats);
 }
 
 function renderTable(table) {
@@ -141,7 +170,6 @@ function guideUrl(baseUrl, slug) {
 
 function buildBreadcrumbSchema(baseUrl, items) {
   return {
-    "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: items.map((item, index) => ({
       "@type": "ListItem",
@@ -154,7 +182,6 @@ function buildBreadcrumbSchema(baseUrl, items) {
 
 function buildFaqSchema(faqs) {
   return {
-    "@context": "https://schema.org",
     "@type": "FAQPage",
     mainEntity: faqs.map((faq) => ({
       "@type": "Question",
@@ -164,20 +191,26 @@ function buildFaqSchema(faqs) {
   };
 }
 
+function articleId(baseUrl, slug) {
+  return `${guideUrl(baseUrl, slug)}#article`;
+}
+
 function buildArticleSchema(baseUrl, guide) {
   const url = guideUrl(baseUrl, guide.slug);
-  const publisher = { "@type": "Organization", name: SITE_NAME, url: `${baseUrl}/` };
   return {
-    "@context": "https://schema.org",
     "@type": "Article",
+    "@id": articleId(baseUrl, guide.slug),
     headline: guide.question,
     description: guide.description,
     url,
-    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    image: `${baseUrl}/assets/domain-og-default.png`,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url, isPartOf: { "@id": websiteId(baseUrl) } },
+    isPartOf: { "@id": `${baseUrl}/guides#collection` },
+    about: { "@type": "Thing", name: "Expired domain auction", sameAs: "https://en.wikipedia.org/wiki/Domain_drop_catching" },
     datePublished: PUBLISHED,
     dateModified: MODIFIED,
-    author: publisher,
-    publisher,
+    author: { "@id": orgId(baseUrl) },
+    publisher: { "@id": orgId(baseUrl) },
     inLanguage: "en",
   };
 }
@@ -215,39 +248,28 @@ function renderGuidesNav(currentSlug = null) {
       <nav aria-label="Expired domain guides">
         <strong><a href="/guides">Expired domain guides</a></strong>
         <ul>${links}</ul>
-        <p><a href="/experiments/intent-fetch/">Find domains</a> · <a href="/methodology/">Methodology</a> · <a href="/data/domain-listings">Domain data</a></p>
+        <p><a href="/experiments/intent-fetch/">Domain finder</a> · <a href="/methodology/">Methodology</a> · <a href="/data/">Data</a></p>
       </nav>
     </footer>`;
 }
 
-function renderDocument({ title, description, canonical, schemas, body, currentSlug }) {
-  return `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="index,follow" />
-    <title>${escapeHtml(title)}</title>
-    <meta name="description" content="${escapeHtml(description)}" />
-    <link rel="canonical" href="${escapeHtml(canonical)}" />
-    <meta property="og:type" content="article" />
-    <meta property="og:title" content="${escapeHtml(title)}" />
-    <meta property="og:description" content="${escapeHtml(description)}" />
-    <meta property="og:url" content="${escapeHtml(canonical)}" />
-    <link rel="stylesheet" href="/assets/app.css?v=dev7" />
-    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
-    ${schemas.map(jsonLdScript).join("\n    ")}
-    <style>${PAGE_STYLES}
-    </style>
-  </head>
-  <body class="snatch-app guides-page">
-    <header class="site-header">${renderSnatchLogoAnchor("/experiments/intent-fetch/")}</header>
-    <main class="guide-main">
+function renderDocument({ title, description, canonical, schemas, body, currentSlug, ogType = "article", baseUrl }) {
+  return renderPageDocument({
+    title,
+    description,
+    canonical,
+    robots: "index,follow",
+    ogType,
+    baseUrl,
+    nodes: schemas,
+    styles: PAGE_STYLES,
+    body: `    <main class="guide-main">
 ${body}
     </main>
-    ${renderGuidesNav(currentSlug)}
-  </body>
-</html>`;
+    ${renderGuidesNav(currentSlug)}`,
+    currentPath: "/guides",
+    bodyClass: "snatch-app guides-page",
+  });
 }
 
 function renderGuidePage(slug, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL, options = {}) {
@@ -256,6 +278,7 @@ function renderGuidePage(slug, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL, option
   const baseUrl = metadataBaseUrl;
   const canonical = guideUrl(baseUrl, guide.slug);
   const stats = guide.dataSection ? getAuctionSnapshotStats(options.batchPath) : null;
+  const dataKind = guide.dataSection === "opening-bids" ? "opening-bids" : "bid-count";
 
   const schemas = [
     buildArticleSchema(baseUrl, guide),
@@ -283,9 +306,9 @@ function renderGuidePage(slug, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL, option
       <article>
         <h1>${escapeHtml(guide.question)}</h1>
         ${guide.answer.map((text, index) => `<p class="${index === 0 ? "guide-answer" : ""}">${escapeHtml(text)}</p>`).join("\n        ")}
-        <p class="guide-meta">Updated ${escapeHtml(MODIFIED)}. Auction rules differ by platform; the specifics below are attributed to the platform that publishes them.</p>
+        <p class="guide-meta">Updated ${escapeHtml(MODIFIED)}.</p>
         ${guide.sections.map(renderSection).join("\n        ")}
-        ${stats ? renderSnapshotSection(stats) : ""}
+        ${stats ? renderSnapshotSection(stats, dataKind) : ""}
         <section class="guide-section">
           <h2>Decision checklist</h2>
           ${renderList(guide.checklist)}
@@ -323,6 +346,8 @@ function renderGuidePage(slug, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL, option
     schemas,
     body,
     currentSlug: guide.slug,
+    ogType: "article",
+    baseUrl,
   });
 }
 
@@ -331,16 +356,22 @@ function renderGuidesIndexPage(metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
   const canonical = `${baseUrl}/guides`;
   const schemas = [
     {
-      "@context": "https://schema.org",
       "@type": "CollectionPage",
+      "@id": `${canonical}#collection`,
       name: GUIDES_INDEX_TITLE,
       description: GUIDES_INDEX_DESCRIPTION,
       url: canonical,
-      hasPart: GUIDES.map((guide) => ({
-        "@type": "Article",
-        headline: guide.question,
-        url: guideUrl(baseUrl, guide.slug),
-      })),
+      isPartOf: { "@id": websiteId(baseUrl) },
+      publisher: { "@id": orgId(baseUrl) },
+      mainEntity: {
+        "@type": "ItemList",
+        itemListElement: GUIDES.map((guide, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          url: guideUrl(baseUrl, guide.slug),
+          item: { "@id": articleId(baseUrl, guide.slug), "@type": "Article", headline: guide.question, url: guideUrl(baseUrl, guide.slug) },
+        })),
+      },
     },
     buildBreadcrumbSchema(baseUrl, [
       { name: "Home", url: `${baseUrl}/` },
@@ -368,6 +399,8 @@ function renderGuidesIndexPage(metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
     schemas,
     body,
     currentSlug: null,
+    ogType: "website",
+    baseUrl,
   });
 }
 

@@ -1,5 +1,6 @@
 const { buildDomainProductGraph } = require("../candidate-store/domain-graph");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
+const { SITE_NAME, orgId } = require("../site-identity");
 
 function renderDomainFeedNdjson(records, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
   return records.map((record) => buildDomainProductGraph(record, metadataBaseUrl));
@@ -17,7 +18,8 @@ function renderDatasetMetadata(records, metadataBaseUrl = DEFAULT_PUBLIC_BASE_UR
   return {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    name: "Snatch.auction Domain Product Catalog",
+    name: `${SITE_NAME} domain catalog`,
+    creator: { "@id": orgId(metadataBaseUrl) },
     description: "Machine-readable domain auction product records and disambiguation graphs.",
     url: `${metadataBaseUrl}/api/domain-feed.json`,
     distribution: [

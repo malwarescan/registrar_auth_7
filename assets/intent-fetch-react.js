@@ -25283,8 +25283,19 @@ void main() {
     }
   });
 
+  // src/site-name.js
+  function getSiteName() {
+    if (typeof document === "undefined") return "";
+    const meta = document.querySelector('meta[property="og:site_name"]');
+    return meta && meta.getAttribute("content") || "";
+  }
+  var init_site_name = __esm({
+    "src/site-name.js"() {
+    }
+  });
+
   // src/components/SnatchLogo/SnatchWordmark.jsx
-  function SnatchWordmarkSvg({ className = "snatchLogoMark", title = "snatch" }) {
+  function SnatchWordmarkSvg({ className = "snatchLogoMark", title = getSiteName() }) {
     const textRef = (0, import_react3.useRef)(null);
     const [layout, setLayout] = (0, import_react3.useState)(null);
     (0, import_react3.useLayoutEffect)(() => {
@@ -25302,7 +25313,7 @@ void main() {
     }, []);
     const anchorX = layout?.anchorX ?? WORDMARK_PERIOD_ANCHOR_X;
     const anchorY = layout?.anchorY ?? WORDMARK_PERIOD_ANCHOR_Y;
-    const viewWidth = layout?.viewWidth ?? WORDMARK_FALLBACK_VIEW_WIDTH;
+    const viewWidth = layout?.viewWidth ?? Math.max(WORDMARK_FALLBACK_VIEW_WIDTH, Math.ceil(String(title).length * 9.2 + 12));
     const viewBox = `0 0 ${viewWidth} ${WORDMARK_VIEWBOX_HEIGHT}`;
     return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
       "svg",
@@ -25325,7 +25336,7 @@ void main() {
               fontSize: WORDMARK_FONT_SIZE,
               fontWeight: "800",
               letterSpacing: "-0.052em",
-              children: "snatch"
+              children: title
             }
           ),
           /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("g", { className: "snatchLogoPeriodGroup", transform: `translate(${anchorX} ${anchorY})`, children: [
@@ -25370,6 +25381,7 @@ void main() {
       import_react3 = __toESM(require_react());
       init_wordmark_metrics();
       init_wordmark_metrics();
+      init_site_name();
       import_jsx_runtime3 = __toESM(require_jsx_runtime());
     }
   });
@@ -25381,8 +25393,8 @@ void main() {
   });
 
   // src/components/SnatchLogo/SnatchLogo.jsx
-  function SnatchLogo({ href = "/experiments/intent-fetch/", className = "" }) {
-    return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("a", { href, className: `snatchLogo snatchBrand ${className}`.trim(), "aria-label": "snatch home", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(SnatchWordmarkSvg, {}) });
+  function SnatchLogo({ href = "/", className = "" }) {
+    return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("a", { href, className: `snatchLogo snatchBrand ${className}`.trim(), "aria-label": `${getSiteName()} home`.trim(), children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(SnatchWordmarkSvg, { title: getSiteName() || void 0 }) });
   }
   var import_react4, import_jsx_runtime4;
   var init_SnatchLogo2 = __esm({
@@ -25390,6 +25402,7 @@ void main() {
       import_react4 = __toESM(require_react());
       init_SnatchWordmark();
       init_SnatchLogo();
+      init_site_name();
       import_jsx_runtime4 = __toESM(require_jsx_runtime());
     }
   });

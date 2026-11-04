@@ -1,9 +1,12 @@
 const DEFAULT_JSON_FEED_LIMIT = 1000;
-const LISTING_SCOPES = new Set(["indexed", "active", "archive"]);
+const LISTING_SCOPES = new Set(["all", "indexed", "active", "archive"]);
+// Default is every record in the current snapshot, each with its real status,
+// so the feed never reports 0 records just because no page is indexable.
+const DEFAULT_LISTING_SCOPE = "all";
 
 function resolveListingScope(query = {}) {
-  const scope = String(query.scope || "indexed").trim().toLowerCase();
-  return LISTING_SCOPES.has(scope) ? scope : "indexed";
+  const scope = String(query.scope || DEFAULT_LISTING_SCOPE).trim().toLowerCase();
+  return LISTING_SCOPES.has(scope) ? scope : DEFAULT_LISTING_SCOPE;
 }
 
 function resolveJsonFeedOptions(query = {}, options = {}) {
@@ -42,6 +45,7 @@ function resolveNdjsonFeedOptions(query = {}) {
 module.exports = {
   DEFAULT_JSON_FEED_LIMIT,
   LISTING_SCOPES,
+  DEFAULT_LISTING_SCOPE,
   resolveListingScope,
   resolveJsonFeedOptions,
   resolveNdjsonFeedOptions,

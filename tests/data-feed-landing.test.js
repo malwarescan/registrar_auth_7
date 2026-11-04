@@ -1,4 +1,5 @@
 const test = require("node:test");
+const { SITE_NAME } = require("../server/site-identity");
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const os = require("os");
@@ -66,7 +67,9 @@ test("resolveFeedLandingKey maps data routes", () => {
 test("homepage dataset schema references listing feed download", () => {
   const schema = renderHomepageDatasetSchema("https://urlsnatcher.com");
   assert.equal(schema["@type"], "Dataset");
-  assert.equal(schema.name, "Snatch Domain Auction Listings");
+  assert.equal(schema["@id"], "https://urlsnatcher.com/data/#dataset");
+  assert.equal(schema.name, `${SITE_NAME} expired-domain auction data`);
+  assert.deepEqual(schema.creator, { "@id": "https://urlsnatcher.com/#organization" });
   assert.ok(schema.distribution.some((entry) => entry.contentUrl.includes("/api/domain-listings.ndjson")));
 });
 
@@ -76,7 +79,8 @@ test("feed landing page includes Dataset and DataFeed schema", () => {
     seedFreshRecord("datalandingshop.com");
     promoteCandidate("datalandingshop-com");
     const html = renderFeedLandingPage("domain-listings", "https://urlsnatcher.com");
-    assert.match(html, /<title>Domain Listings Feed \| Snatch Data<\/title>/);
+    assert.ok(html.includes(`<title>Expired Domain Auction Listings Feed | ${SITE_NAME}</title>`));
+    assert.match(html, /<a href="\/"/);
     assert.match(html, /application\/ld\+json/);
     assert.match(html, /"@type":"Dataset"/);
     assert.match(html, /"@type":"DataFeed"/);
@@ -87,9 +91,12 @@ test("feed landing page includes Dataset and DataFeed schema", () => {
   }
 });
 
-test("injectHomeDiscovery adds dataset schema and feed discovery links", () => {
+test("injectHomeDiscovery adds site graph and feed discovery links, no Dataset", () => {
   const html = injectHomeDiscovery("<!DOCTYPE html><html><head></head><body></body></html>", "https://urlsnatcher.com");
   assert.match(html, /rel="alternate" type="application\/x-ndjson" href="\/api\/domain-listings\.ndjson"/);
-  assert.match(html, /"@type":"Dataset"/);
-  assert.match(html, /Snatch Domain Auction Listings/);
+  assert.match(html, /"@type":"Organization","@id":"https:\/\/urlsnatcher\.com\/#organization"/);
+  assert.match(html, /"@type":"WebSite","@id":"https:\/\/urlsnatcher\.com\/#website"/);
+  assert.match(html, /"@type":"WebPage"/);
+  assert.doesNotMatch(html, /"@type":"Dataset"/);
+  assert.doesNotMatch(html, /numberOfItems/);
 });

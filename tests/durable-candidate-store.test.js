@@ -198,7 +198,7 @@ test("resolveDomainPage prefers published durable over session", () => {
 test("bare promoted page is indexable canonical product page", () => {
   const candidate = sampleAuctionCandidate();
   const html = renderCanonicalDomainPage(candidate, {}, { indexable: true, port: 4173, isProduction: false });
-  assert.match(html, /anudesk\.com — \.com Auction Domain \| Snatch\.auction/);
+  assert.match(html, /anudesk\.com — \.com Auction Domain \| URL Snatcher/);
   assert.match(html, /meta name="robots" content="index,follow/);
   assert.match(html, /is a \.com auction domain available through NameSilo/);
   assert.doesNotMatch(html, /AI Receptionist Domain Candidate/i);
@@ -227,7 +227,7 @@ test("overlay page is noindex and canonicalizes to bare slug", () => {
   assert.match(html, /meta name="robots" content="noindex,follow/);
   assert.match(html, /link rel="canonical" href="https:\/\/urlsnatcher\.com\/domains\/anudesk-com"/);
   assert.match(html, /Recommended for AI Receptionist · #1 · 76 fit/);
-  assert.match(html, /<title>anudesk\.com — \.com Auction Domain \| Snatch\.auction<\/title>/);
+  assert.match(html, /<title>anudesk\.com — \.com Auction Domain \| URL Snatcher<\/title>/);
   assert.match(html, /AI Receptionist domain candidate in AI Software/);
   assert.doesNotMatch(html, /<title>[\s\S]*AI Receptionist Domain Candidate[\s\S]*<\/title>/);
 });

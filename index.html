@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Find Expired Domain Auctions and Bid Smarter | Snatch.auction</title>
-    <meta name="description" content="Search live expired-domain auctions by what you are building, then use our decision guides on backorders, due diligence and fair bids before you place a bid." />
+    <title>Find Expired Domain Auctions and Bid Smarter | {{SITE_NAME}}</title>
+    <meta name="description" content="Search current NameSilo expired-domain auctions by what you are building, then use our decision guides on backorders, due diligence and fair bids before you place a bid." />
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
     <style>
       body {
@@ -44,25 +44,22 @@
       ul {
         padding-left: 20px;
       }
-      footer {
-        margin-top: 40px;
-        font-size: 13px;
-        color: #6b7280;
-      }
+      <!--SITE_CHROME_STYLES-->
     </style>
   </head>
   <body>
+    <!--SITE_HEADER-->
     <main>
       <h1>Find expired domain auctions worth bidding on</h1>
       <p>
-        Describe what you are building and the domain finder searches live expired-domain auctions for names that fit.
-        Each candidate is scored for semantic fit, buyer fit, brandability, acquisition friction, TLD trust, category
-        context and risk, so you can shortlist quickly and see current bids before you commit.
+        Describe what you are building and the domain finder searches current NameSilo expired-domain auctions for
+        names that fit. Each name is scored for fit, brandability, pronounceability, TLD trust and risk, and shows its
+        recorded bid and end time, so you can shortlist quickly and check the auction before you commit.
       </p>
       <p><a class="cta" href="/experiments/intent-fetch/">Open the domain finder</a></p>
       <p>
-        Scores are directional signals, not guarantees. See the <a href="/methodology/">scoring methodology</a> for how
-        they are computed.
+        Scores are directional signals, not valuations. The <a href="/methodology/">scoring methodology</a> explains how
+        each one is calculated.
       </p>
 
       <nav aria-label="Expired domain guides">
@@ -80,19 +77,14 @@
         </ul>
       </nav>
 
-      <h2>Open domain data</h2>
+      <h2><a href="/data/">Expired domain auction data</a></h2>
       <p>
-        Listings and scores are also published as machine-readable feeds:
-        <a href="/data/domain-listings">domain listings</a>,
-        <a href="/data/domain-feed">domain catalog</a> and
-        <a href="/data/domain-graph">domain graph</a>.
+        The auction records and scores are free to download:
+        <a href="/data/domain-listings">listings</a>,
+        <a href="/data/domain-feed">full catalog</a> and
+        <a href="/data/domain-graph">relationship graph</a>.
       </p>
-
-      <footer>
-        <a href="/experiments/intent-fetch/" style="color:inherit">Domain finder</a> ·
-        <a href="/guides" style="color:inherit">Guides</a> ·
-        <a href="/methodology/" style="color:inherit">Methodology</a>
-      </footer>
     </main>
+    <!--SITE_FOOTER-->
   </body>
 </html>

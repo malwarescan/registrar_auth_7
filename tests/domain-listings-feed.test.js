@@ -136,14 +136,15 @@ function collectJson(res) {
 
 test.afterEach(() => resetStorePaths());
 
-test("resolveListingScope defaults to indexed", () => {
-  assert.equal(resolveListingScope({}), "indexed");
+test("resolveListingScope defaults to all", () => {
+  assert.equal(resolveListingScope({}), "all");
+  assert.equal(resolveListingScope({ scope: "indexed" }), "indexed");
   assert.equal(resolveListingScope({ scope: "active" }), "active");
   assert.equal(resolveListingScope({ scope: "archive" }), "archive");
-  assert.equal(resolveListingScope({ scope: "invalid" }), "indexed");
+  assert.equal(resolveListingScope({ scope: "invalid" }), "all");
 });
 
-test("listings NDJSON default returns indexed records only", () => {
+test("listings NDJSON default returns every record with its status", () => {
   const tempDir = makeTempStore();
   try {
     seedScopeFixtures();
@@ -151,6 +152,23 @@ test("listings NDJSON default returns indexed records only", () => {
     handleDomainListingsNdjson({ headers: { accept: "*/*" } }, sink.res, {
       metadataBaseUrl: "https://urlsnatcher.com",
       query: {},
+    });
+    const slugs = sink.parse().map((line) => line.slug).sort();
+    assert.ok(slugs.includes("indexedwinner-com"));
+    assert.ok(slugs.includes("archivedlot-com"));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("listings NDJSON scope=indexed returns indexed records only", () => {
+  const tempDir = makeTempStore();
+  try {
+    seedScopeFixtures();
+    const sink = collectNdjson({});
+    handleDomainListingsNdjson({ headers: { accept: "*/*" } }, sink.res, {
+      metadataBaseUrl: "https://urlsnatcher.com",
+      query: { scope: "indexed" },
     });
     assert.deepEqual(sink.getHeaders(), NDJSON_INLINE_HEADERS);
     const lines = sink.parse();

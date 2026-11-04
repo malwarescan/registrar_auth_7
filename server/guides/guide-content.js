@@ -374,12 +374,12 @@ const GUIDES = [
     question: "Should I bid on a domain with a low bid count?",
     title: "Should I Bid on a Domain With a Low Bid Count? A Decision Guide",
     description:
-      "A low bid count is normal for expired-domain auctions and is not a warning sign by itself. Use real auction data and a short checklist to decide whether a quiet auction is a bargain or a pass.",
+      "A low bid count is normal for expired-domain auctions and is not a warning sign by itself. See bid counts from 500 NameSilo auctions recorded in June 2026, then use a short checklist to decide whether a quiet auction is a bargain or a pass.",
     answer: [
       "Yes, if the domain passes your own checks and fits a real use. A low bid count is normal in expired-domain auctions, where most names get no bids at all, so it tells you little about quality by itself. What it does tell you is that you are unlikely to face a bidding war, so bid what the name is worth to you and no more.",
       "The risk is not the bid count; it is buying a name nobody wants for a good reason, such as spam history or a trademark problem.",
     ],
-    dataSection: true,
+    dataSection: "bid-count",
     sections: [
       {
         heading: "Low bid count: what it can mean",
@@ -565,12 +565,12 @@ const GUIDES = [
     question: "How do you estimate a fair bid for an expired domain?",
     title: "How to Estimate a Fair Bid for an Expired Domain: A Simple Formula",
     description:
-      "Set your maximum bid from the cheaper of two numbers: what the domain is worth to you, and what comparable names actually sold for. A step-by-step method with real auction data and the costs most bidders forget.",
+      "Set your maximum bid from the cheaper of two numbers: what the domain is worth to you, and what comparable names actually sold for. A step-by-step method, opening bids from a June 2026 auction sample, and the costs most bidders forget.",
     answer: [
       "Set your maximum bid at the lower of two numbers: what the domain is worth to you compared with your next-best option, and what comparable domains have actually sold for. Then subtract the renewal and any fees, because the bid is not the whole cost.",
       "Decide this number before the auction ends and do not raise it in the final minutes.",
     ],
-    dataSection: true,
+    dataSection: "opening-bids",
     sections: [
       {
         heading: "The method",

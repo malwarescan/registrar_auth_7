@@ -15,10 +15,12 @@ const { getCoreSitemapPaths, buildCoreSitemap, buildSitemapIndex } = require("..
 const BASE = "https://urlsnatcher.com";
 const ROOT = path.join(__dirname, "..");
 
+// Returns every schema node on the page, flattening a single @graph.
 function jsonLdBlocks(html) {
-  return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((match) =>
-    JSON.parse(match[1])
-  );
+  return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((match) => {
+    const parsed = JSON.parse(match[1]);
+    return parsed["@graph"] || [parsed];
+  });
 }
 
 test("eight guides with unique slugs and complete decision sections", () => {
@@ -66,7 +68,10 @@ test("each guide page renders H1 question, direct answer, canonical and schema",
     assert.match(html, /<table>/);
 
     const types = jsonLdBlocks(html).map((block) => block["@type"]);
-    assert.deepEqual(types.sort(), ["Article", "BreadcrumbList", "FAQPage"]);
+    assert.deepEqual(types.sort(), ["Article", "BreadcrumbList", "FAQPage", "Organization", "Organization", "WebSite"]);
+    const article = jsonLdBlocks(html).find((block) => block["@type"] === "Article");
+    assert.equal(article["@id"], `${BASE}/guides/${guide.slug}#article`);
+    assert.deepEqual(article.publisher, { "@id": `${BASE}/#organization` });
     const faq = jsonLdBlocks(html).find((block) => block["@type"] === "FAQPage");
     assert.equal(faq.mainEntity.length, guide.faqs.length);
     const crumbs = jsonLdBlocks(html).find((block) => block["@type"] === "BreadcrumbList");

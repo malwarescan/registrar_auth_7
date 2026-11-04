@@ -157,7 +157,7 @@ function handleDomainListingsNdjson(req, res, options = {}) {
   if (wantsHtmlFeedPreview(req, query)) {
     sendFeedBrowsePage(res, {
       title: "Domain Listings Feed",
-      description: `Public listing feed for scope=${scope}.`,
+      description: `Expired-domain auction listings feed (scope=${scope}). Each record shows whether its auction is running or has ended.`,
       requestPath,
       lineCount: lines.length,
       previewLines: lines.slice(0, FEED_PREVIEW_LINES),
@@ -249,6 +249,7 @@ function handleDomainListingsDatasetJson(req, res, options = {}) {
   const metadataBaseUrl = options.metadataBaseUrl || DEFAULT_PUBLIC_BASE_URL;
   const payload = renderDomainListingsDatasetMetadata(
     {
+      listingsAll: countListingCandidates("all", { metadataBaseUrl }),
       listingsIndexed: countListingCandidates("indexed", { metadataBaseUrl }),
       listingsActive: countListingCandidates("active", { metadataBaseUrl }),
       listingsArchive: countListingCandidates("archive", { metadataBaseUrl }),

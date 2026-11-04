@@ -2,6 +2,8 @@
 const { renderSnatchLogoAnchor } = require("../snatch-logo-markup");
 const {
   SITE_NAME,
+  OPERATOR_NAME,
+  OPERATOR_URL,
   buildSiteGraphNodes,
   escapeHtml,
 } = require("../site-identity");
@@ -13,6 +15,7 @@ const SITE_NAV = [
   { href: "/guides", label: "Guides" },
   { href: "/methodology/", label: "Methodology" },
   { href: "/data/", label: "Data" },
+  { href: "/about/", label: "About" },
 ];
 
 const SITE_CHROME_STYLES = `
@@ -42,9 +45,14 @@ function renderSiteHeader(currentPath = null) {
   return `<header class="site-header site-chrome">${renderSnatchLogoAnchor("/")}${renderSiteNav(currentPath)}</header>`;
 }
 
+// Visible statement of who runs the site, used in every footer.
+function renderOperatorDisclosure() {
+  return `${escapeHtml(SITE_NAME)} is run by <a href="${escapeHtml(OPERATOR_URL)}" rel="noopener">${escapeHtml(OPERATOR_NAME)}</a>. <a href="/about/">About this site</a>.`;
+}
+
 function renderSiteFooter() {
   const links = SITE_NAV.map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join(" · ");
-  return `<footer class="site-footer"><p>${links}</p><p>${escapeHtml(SITE_NAME)}. Auction listings come from public NameSilo expired-domain auctions. Scores are directional signals, not guarantees.</p></footer>`;
+  return `<footer class="site-footer"><p>${links}</p><p>${renderOperatorDisclosure()} Auctions listed here are ${escapeHtml(OPERATOR_NAME)} expired-domain auctions; scores are directional signals, not valuations.</p></footer>`;
 }
 
 function jsonLdScript(payload) {
@@ -53,17 +61,17 @@ function jsonLdScript(payload) {
 
 // Wraps page-specific nodes in one @graph that always carries the site
 // Organization and WebSite entities.
-function buildPageGraph(baseUrl, nodes = [], options = {}) {
+function buildPageGraph(baseUrl, nodes = []) {
   return {
     "@context": "https://schema.org",
-    "@graph": [...buildSiteGraphNodes(baseUrl, options), ...nodes],
+    "@graph": [...buildSiteGraphNodes(baseUrl), ...nodes],
   };
 }
 
 function renderSiteHeadTags(baseUrl = DEFAULT_PUBLIC_BASE_URL, options = {}) {
   const tags = [`<meta property="og:site_name" content="${escapeHtml(SITE_NAME)}" />`];
   if (options.includeGraph !== false) {
-    tags.push(jsonLdScript(buildPageGraph(baseUrl, options.nodes || [], options)));
+    tags.push(jsonLdScript(buildPageGraph(baseUrl, options.nodes || [])));
   }
   return tags.join("\n    ");
 }
@@ -122,6 +130,7 @@ module.exports = {
   renderSiteNav,
   renderSiteHeader,
   renderSiteFooter,
+  renderOperatorDisclosure,
   renderSiteHeadTags,
   buildPageGraph,
   jsonLdScript,

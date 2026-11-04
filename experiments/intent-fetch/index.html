@@ -4,23 +4,50 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Cache-Control" content="no-cache" />
-    <title>Intent Fetch | Snatch</title>
+    <title>Expired Domain Finder: Search Auctions by What You're Building | {{SITE_NAME}}</title>
+    <meta name="description" content="Describe your business or product in a sentence and the finder searches current NameSilo expired-domain auctions for names that fit, with a fit score, recorded bid, end time and auction link for each." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/app.css?v=dev19" />
     <link rel="stylesheet" href="/assets/intent-fetch-react.css?v=dev19" />
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+    <style>
+      <!--SITE_CHROME_STYLES-->
+      .finder-static { max-width: 820px; margin: 0 auto; padding: 24px 20px; font: 16px/1.65 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111827; }
+      .finder-static a { color: #0044ff; }
+      .finder-static h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 12px; }
+      .finder-static h2 { font-size: 1.25rem; margin: 28px 0 8px; }
+    </style>
   </head>
   <body class="snatch-app intent-fetch-page">
-    <div id="intent-fetch-root"></div>
-    <footer class="site-guides-footer" style="max-width:820px;margin:0 auto;padding:24px 20px 40px;font:13px/1.6 Inter,-apple-system,sans-serif;color:#6b7280;text-align:center">
-      <a href="/guides" style="color:inherit">Expired domain guides</a> ·
-      <a href="/guides/how-do-expired-domain-auctions-work" style="color:inherit">How auctions work</a> ·
-      <a href="/guides/how-to-check-an-expired-domain-before-bidding" style="color:inherit">Check before bidding</a> ·
-      <a href="/guides/what-is-a-domain-backorder" style="color:inherit">Backorders</a> ·
-      <a href="/methodology/" style="color:inherit">Methodology</a>
-    </footer>
+    <div id="intent-fetch-root">
+      <!--SITE_HEADER-->
+      <div class="finder-static">
+        <h1>Find expired domains that match what you are building</h1>
+        <p>Describe your business, product or idea in a sentence. The finder picks out the key terms, searches current NameSilo expired-domain auctions for names that contain them, and ranks the matches with a fit score, the recorded bid, the end time and a link to the auction. This search needs JavaScript; the guides and data below work without it.</p>
+      </div>
+    </div>
+    <section class="finder-static" aria-labelledby="finder-how">
+      <h2 id="finder-how">How to use the domain finder</h2>
+      <ol>
+        <li>Type a short brief, for example "AI receptionist for dental clinics" or "local pizza delivery".</li>
+        <li>Check the terms the finder detected and edit the brief if it missed what matters.</li>
+        <li>Compare the ranked names: each shows its fit score, recorded bid, auction end time and the tradeoff to watch.</li>
+        <li>Open a name to see its full score breakdown, then follow the link to bid on NameSilo. Bids are placed on NameSilo, not here.</li>
+      </ol>
+      <h2>What the scores mean</h2>
+      <p>Fit, brandability, pronounceability, TLD trust and risk are calculated by fixed, published rules. Read the <a href="/methodology/">scoring methodology</a> before relying on a score.</p>
+      <h2>Before you bid</h2>
+      <ul>
+        <li><a href="/guides/how-do-expired-domain-auctions-work">How do expired domain auctions work?</a></li>
+        <li><a href="/guides/how-to-check-an-expired-domain-before-bidding">How do you check an expired domain before bidding?</a></li>
+        <li><a href="/guides/how-to-estimate-a-fair-bid-for-an-expired-domain">How do you estimate a fair bid for an expired domain?</a></li>
+        <li><a href="/guides/what-is-a-domain-backorder">What is a domain backorder?</a></li>
+        <li><a href="/guides">All expired domain guides</a></li>
+      </ul>
+    </section>
+    <!--SITE_FOOTER-->
     <script src="/assets/intent-fetch-react.js?v=dev19"></script>
   </body>
 </html>

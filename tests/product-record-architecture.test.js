@@ -113,7 +113,7 @@ test("unpublished durable records resolve to noindex product pages", () => {
       isProduction: false,
     });
     assert.match(html, /meta name="robots" content="noindex,follow/);
-    assert.match(html, /anudesk\.com — \.com Auction Domain \| Snatch\.auction/);
+    assert.match(html, /anudesk\.com — \.com Auction Domain \| URL Snatcher/);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

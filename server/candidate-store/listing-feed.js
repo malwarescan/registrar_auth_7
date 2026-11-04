@@ -2,7 +2,7 @@ const { listDurableCandidates, listSitemapCandidates } = require("./durable-cand
 const { resolveSeoTier, SEO_TIER } = require("./seo-tier");
 const { resolveLifecycleState } = require("./product-lifecycle");
 
-const LISTING_SCOPES = new Set(["indexed", "active", "archive"]);
+const LISTING_SCOPES = new Set(["all", "indexed", "active", "archive"]);
 
 function isBareDurableListing(record) {
   if (!record?.slug || !record.domain) return false;
@@ -10,8 +10,12 @@ function isBareDurableListing(record) {
   return true;
 }
 
-function listListingCandidates(scope = "indexed", options = {}) {
-  const normalizedScope = LISTING_SCOPES.has(scope) ? scope : "indexed";
+function listListingCandidates(scope = "all", options = {}) {
+  const normalizedScope = LISTING_SCOPES.has(scope) ? scope : "all";
+
+  if (normalizedScope === "all") {
+    return listDurableCandidates().filter(isBareDurableListing);
+  }
 
   if (normalizedScope === "indexed") {
     return listSitemapCandidates(options);
@@ -32,7 +36,7 @@ function listListingCandidates(scope = "indexed", options = {}) {
   });
 }
 
-function countListingCandidates(scope = "indexed", options = {}) {
+function countListingCandidates(scope = "all", options = {}) {
   return listListingCandidates(scope, options).length;
 }
 

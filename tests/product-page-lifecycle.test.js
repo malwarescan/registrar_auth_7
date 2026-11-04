@@ -57,7 +57,7 @@ test("durable non-indexable record renders full product page with noindex", () =
       port: 4173,
       isProduction: false,
     });
-    assert.match(html, /deskflow\.com — \.com Auction Domain \| Snatch\.auction/);
+    assert.match(html, /deskflow\.com — \.com Auction Domain \| URL Snatcher/);
     assert.match(html, /meta name="robots" content="noindex,follow/);
     assert.match(html, /View auction at NameSilo/);
   } finally {

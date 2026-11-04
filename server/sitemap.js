@@ -1,7 +1,20 @@
 const { listPublishedIntents } = require("./published-catalog");
 const { listSitemapCandidates } = require("./candidate-store/durable-candidates");
 const { toAbsolutePublicUrl } = require("./public-url");
-const { listGuideSlugs } = require("./guides/guide-content");
+const { listGuideSlugs, MODIFIED: GUIDES_MODIFIED } = require("./guides/guide-content");
+
+// Date each core page's content last changed (YYYY-MM-DD).
+const CORE_PAGE_LASTMOD = {
+  "/": "2026-11-05",
+  "/experiments/intent-fetch/": "2026-11-05",
+  "/methodology/": "2026-11-05",
+  "/about/": "2026-11-05",
+  "/data/": "2026-11-05",
+  "/data/domain-listings": "2026-11-05",
+  "/data/domain-feed": "2026-11-05",
+  "/data/domain-graph": "2026-11-05",
+  "/guides": GUIDES_MODIFIED,
+};
 
 const SITEMAP_INDEX_CHILDREN = [
   "/sitemap-core.xml",
@@ -36,6 +49,8 @@ function getCoreSitemapPaths() {
     "/",
     "/experiments/intent-fetch/",
     "/methodology/",
+    "/about/",
+    "/data/",
     "/data/domain-listings",
     "/data/domain-feed",
     "/data/domain-graph",
@@ -117,8 +132,8 @@ function buildSitemapIndex(options = {}) {
 function buildCoreSitemapEntries(options = {}) {
   return getCoreSitemapPaths().map((pathname) => ({
     pathname: toAbsolutePublicUrl(pathname, options),
+    lastmod: CORE_PAGE_LASTMOD[pathname] || (pathname.startsWith("/guides/") ? GUIDES_MODIFIED : null),
     changefreq: "monthly",
-    priority: "0.8",
   }));
 }
 

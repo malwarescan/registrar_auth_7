@@ -1,7 +1,7 @@
 const { buildDomainProductGraph } = require("../candidate-store/domain-graph");
 const { normalizePageMode } = require("../candidate-store/product-lifecycle");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
-const { SITE_NAME } = require("../site-identity");
+const { SITE_NAME, OPERATOR_ID } = require("../site-identity");
 
 const ROBOTS_SUFFIX = "max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
@@ -68,7 +68,7 @@ function buildSeoJsonLd(record, mode, options = {}) {
       if (node["@type"] === "Organization") {
         // Keep the site Organization and the NameSilo node the Offer.seller references.
         const id = String(node["@id"] || "");
-        return id.includes("/#organization") || id.includes("/#provider-namesilo");
+        return id.includes("/#organization") || id === OPERATOR_ID;
       }
       return true;
     }

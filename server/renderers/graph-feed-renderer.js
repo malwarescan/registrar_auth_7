@@ -5,7 +5,7 @@ function nodeTypeForSchemaType(schemaType, nodeId = "") {
   if (schemaType === "Product" && nodeId.includes("#comparable-")) return "ComparableDomain";
   if (schemaType === "Product") return "Domain";
   if (schemaType === "Offer") return "Offer";
-  if (schemaType === "Organization" && nodeId.includes("#provider-")) return "Provider";
+  if (schemaType === "Organization" && (nodeId.includes("#provider-") || nodeId === "https://www.namesilo.com/#organization")) return "Provider";
   if (schemaType === "DefinedTerm" && nodeId.includes("#category-")) return "Category";
   if (schemaType === "DefinedTerm" && nodeId.includes("#use-case-")) return "UseCase";
   if (schemaType === "DefinedTerm" && nodeId.includes("#tld")) return "TLD";
@@ -41,8 +41,8 @@ function buildGraphFeedRecord(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL)
     name: record.domain,
     url: canonicalUrl,
     slug: record.slug,
-    status: record.status,
-    seoTier: record.seoTier,
+    status: require("../candidate-store/product-lifecycle").resolveEffectiveStatus(record),
+    seoTier: require("../candidate-store/seo-tier").resolveSeoTier(record),
   });
 
   const auctionUrl =
@@ -110,7 +110,7 @@ function buildGraphFeedRecord(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL)
 
     if (feedType === "Offer") {
       pushEdge(edges, { type: "hasOffer", from: domainNodeId, to: nodeId });
-      const providerId = `${metadataBaseUrl}/#provider-namesilo`;
+      const providerId = "https://www.namesilo.com/#organization";
       pushEdge(edges, {
         type: "soldBy",
         from: nodeId,

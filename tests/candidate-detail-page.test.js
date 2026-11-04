@@ -149,7 +149,7 @@ test("hero subtitle includes domain candidate phrasing with category", () => {
 test("page title uses intent domain candidate pattern", () => {
   const intentRecord = mockIntentRecord();
   const title = buildPageTitle(sampleCandidate(), intentRecord);
-  assert.equal(title, "anudesk.com — AI Receptionist Domain Candidate | Snatch.auction");
+  assert.equal(title, "anudesk.com — AI Receptionist Domain Candidate | URL Snatcher");
   assert.doesNotMatch(title, /Candidate match/i);
 });
 
@@ -158,7 +158,7 @@ test("legal ai desk domain uses desk-calibrated copy without overclaiming title"
   const candidate = sampleCandidate({ matchedTerms: ["desk", "support"] });
   assert.equal(
     buildPageTitle(candidate, intentRecord),
-    "anudesk.com — Legal AI Domain Candidate | Snatch.auction"
+    "anudesk.com — Legal AI Domain Candidate | URL Snatcher"
   );
   assert.equal(buildHeroSubtitle(candidate, intentRecord, true), "Legal AI domain candidate in AI Software");
   assert.equal(
@@ -188,7 +188,7 @@ test("literal intent token keeps direct domain candidate title", () => {
   });
   assert.equal(
     buildPageTitle(candidate, intentRecord),
-    "legalai.com — Legal AI Domain Candidate | Snatch.auction"
+    "legalai.com — Legal AI Domain Candidate | URL Snatcher"
   );
 });
 
@@ -288,7 +288,7 @@ test("rendered page includes tradeoff badge and desk-calibrated hero for anudesk
     { intentId: intentRecord.intentId, rank: 1, fitScore: 76 },
     { indexable: false, port: 4173, isProduction: false }
   );
-  assert.match(html, /anudesk\.com — AI Receptionist Domain Candidate \| Snatch\.auction/);
+  assert.match(html, /anudesk\.com — AI Receptionist Domain Candidate \| URL Snatcher/);
   assert.match(html, /Support\/workflow \.com with moderate AI receptionist clarity/);
   assert.match(html, /Tradeoff: strong workflow signal, weaker literal receptionist signal/);
   assert.match(html, /AI Receptionist domain candidate in AI Software/);

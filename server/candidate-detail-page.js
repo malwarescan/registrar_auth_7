@@ -17,10 +17,12 @@ const { buildSeoJsonLd, buildSeoRenderData } = require("./renderers/seo-renderer
 const { buildIntentOverlay } = require("./renderers/overlay-renderer");
 const { candidateViewToProductRecord } = require("./candidate-store/product-record");
 const { normalizePageMode, hasAuctionEnded } = require("./candidate-store/product-lifecycle");
-const { SITE_NAME, buildSiteGraphNodes } = require("./site-identity");
-const { renderSiteNav, renderSiteHeadTags } = require("./renderers/site-layout");
+const { SITE_NAME, OPERATOR_ID, buildSiteGraphNodes } = require("./site-identity");
+const { renderSiteNav, renderSiteHeadTags, renderSiteFooter } = require("./renderers/site-layout");
 
 const DETAIL_NAV_STYLES = `<style>
+      .site-footer { max-width: 960px; margin: 0 auto; padding: 20px 20px 96px; border-top: 1px solid #e5e7eb; font: 13px/1.6 Inter, -apple-system, sans-serif; color: #6b7280; }
+      .site-footer a { color: inherit; }
       .site-nav--detail { display: flex; justify-content: center; padding: 0 16px 8px; }
       .site-nav--detail ul { display: flex; flex-wrap: wrap; gap: 6px 18px; list-style: none; margin: 0; padding: 0; font: 600 14px/1.4 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       .site-nav--detail a { color: #374151; text-decoration: none; }
@@ -956,7 +958,7 @@ function buildCandidateJsonLd(candidate, canonicalUrl, ogImage, stale, matchedIn
   };
 
   const graph = [
-    ...buildSiteGraphNodes(metadataBaseUrl, { includeNameSilo: true }),
+    ...buildSiteGraphNodes(metadataBaseUrl),
     { ...webpage, about: { "@id": `${canonicalUrl}#product` }, publisher: { "@id": `${metadataBaseUrl}/#organization` } },
     {
       "@type": "BreadcrumbList",
@@ -997,7 +999,7 @@ function buildCandidateJsonLd(candidate, canonicalUrl, ogImage, stale, matchedIn
       priceCurrency: candidate.acquisitionPath.priceCurrency,
       price: candidate.acquisitionPath.currentBid,
       availability: "https://schema.org/InStock",
-      seller: { "@id": `${metadataBaseUrl}/#provider-namesilo` },
+      seller: { "@id": OPERATOR_ID },
       validThrough: candidate.acquisitionPath?.auctionEndsAt || candidate.statusExpiresAt,
       description: candidate.catch || "Current bid is not the final sale price.",
       businessFunction: "http://purl.org/goodrelations/v1#Sell",
@@ -1020,7 +1022,7 @@ function buildCandidateJsonLd(candidate, canonicalUrl, ogImage, stale, matchedIn
       priceCurrency: candidate.acquisitionPath.priceCurrency,
       price: candidate.acquisitionPath.registrationPrice,
       availability: "https://schema.org/InStock",
-      seller: { "@id": `${metadataBaseUrl}/#provider-namesilo` },
+      seller: { "@id": OPERATOR_ID },
       validThrough: candidate.statusExpiresAt,
     };
   }
@@ -1310,6 +1312,7 @@ function renderSessionRecommendationPage(candidate, pageContext = {}, options = 
         </div>
       </section>
     </main>
+    ${renderSiteFooter()}
     <div class="candidate-mobile-bar" aria-hidden="true">
       <a class="candidate-mobile-bar-cta" href="${escapeHtml(acquireHref)}" ${stale ? 'aria-disabled="true"' : ""}>${escapeHtml(acquireCtaLabel)}</a>
     </div>
@@ -1472,6 +1475,7 @@ function renderCanonicalDomainPage(candidate, pageContext = {}, options = {}) {
         </div>
       </section>
     </main>
+    ${renderSiteFooter()}
     <div class="candidate-mobile-bar" aria-hidden="true">
       <a class="candidate-mobile-bar-cta" href="${escapeHtml(acquireHref)}" ${stale || lifecycle.ctaDisabled ? 'aria-disabled="true"' : ""}>${escapeHtml(acquireCtaLabel)}</a>
     </div>

@@ -1,4 +1,9 @@
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
+const { SITE_NAME, orgId, namesiloId } = require("../site-identity");
+
+function dataHubDatasetId(metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
+  return `${metadataBaseUrl}/data/#dataset`;
+}
 
 function renderFeedDistribution(metadataBaseUrl, contentUrl, encodingFormat) {
   return {
@@ -10,6 +15,7 @@ function renderFeedDistribution(metadataBaseUrl, contentUrl, encodingFormat) {
 
 function renderDomainListingsDatasetMetadata(counts = {}, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
   const {
+    listingsAll = 0,
     listingsIndexed = 0,
     listingsActive = 0,
     listingsArchive = 0,
@@ -20,15 +26,13 @@ function renderDomainListingsDatasetMetadata(counts = {}, metadataBaseUrl = DEFA
   return {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    name: "UrlSnatcher Domain Marketplace Feeds",
+    "@id": dataHubDatasetId(metadataBaseUrl),
+    name: `${SITE_NAME} expired-domain auction data`,
     description:
-      "Public domain listing feeds, full durable catalog export, and marketplace graph export for AI retrieval and discovery.",
-    creator: {
-      "@type": "Organization",
-      name: "Snatch.auction",
-      url: `${metadataBaseUrl}/`,
-    },
-    url: `${metadataBaseUrl}/data/domain-listings`,
+      "Expired-domain auction records collected from public NameSilo auctions: listing, full catalog and relationship-graph feeds. Each record's status is recalculated from its auction end time.",
+    creator: { "@id": orgId(metadataBaseUrl), "@type": "Organization", name: SITE_NAME, url: `${metadataBaseUrl}/` },
+    isBasedOn: { "@id": namesiloId(metadataBaseUrl), "@type": "Organization", name: "NameSilo", url: "https://www.namesilo.com" },
+    url: `${metadataBaseUrl}/data/`,
     distribution: [
       renderFeedDistribution(metadataBaseUrl, "/api/domain-listings.ndjson", "application/x-ndjson"),
       renderFeedDistribution(metadataBaseUrl, "/api/domain-listings.json", "application/json"),
@@ -39,7 +43,14 @@ function renderDomainListingsDatasetMetadata(counts = {}, metadataBaseUrl = DEFA
     hasPart: [
       {
         "@type": "DataFeed",
-        name: "Public domain listings (indexed scope default)",
+        name: "All recorded auction listings (default scope)",
+        url: `${metadataBaseUrl}/data/domain-listings`,
+        contentUrl: `${metadataBaseUrl}/api/domain-listings.ndjson`,
+        numberOfItems: listingsAll,
+      },
+      {
+        "@type": "DataFeed",
+        name: "Listings whose pages are in the sitemap",
         url: `${metadataBaseUrl}/data/domain-listings`,
         contentUrl: `${metadataBaseUrl}/api/domain-listings.ndjson?scope=indexed`,
         numberOfItems: listingsIndexed,
@@ -76,7 +87,7 @@ function renderDomainListingsDatasetMetadata(counts = {}, metadataBaseUrl = DEFA
     variableMeasured: [
       "domain",
       "auction status",
-      "current bid",
+      "recorded bid",
       "TLD trust",
       "brandability",
       "category",
@@ -86,5 +97,6 @@ function renderDomainListingsDatasetMetadata(counts = {}, metadataBaseUrl = DEFA
 }
 
 module.exports = {
+  dataHubDatasetId,
   renderDomainListingsDatasetMetadata,
 };

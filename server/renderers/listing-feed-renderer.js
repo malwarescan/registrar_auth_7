@@ -1,4 +1,8 @@
-const { resolveLifecycleState, resolveProductPageMode } = require("../candidate-store/product-lifecycle");
+const {
+  resolveLifecycleState,
+  resolveProductPageMode,
+  resolveEffectiveStatus,
+} = require("../candidate-store/product-lifecycle");
 const { resolveSeoTier } = require("../candidate-store/seo-tier");
 const { buildRobots } = require("./seo-renderer");
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
@@ -17,7 +21,8 @@ function renderDomainListingRecord(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE
   const canonicalUrl = resolvePublicCanonicalUrl(record, metadataBaseUrl);
   const lifecycleState = resolveLifecycleState(record);
   const seoTier = resolveSeoTier(record);
-  const pageMode = resolveProductPageMode(record);
+  const { resolveIndexedMode } = require("../candidate-store/resolve-domain-page");
+  const pageMode = resolveIndexedMode(record, resolveProductPageMode(record), { metadataBaseUrl });
   const scores = record.baseScores || {};
 
   return {
@@ -26,7 +31,7 @@ function renderDomainListingRecord(record, metadataBaseUrl = DEFAULT_PUBLIC_BASE
     slug: record.slug,
     url: canonicalUrl,
     canonicalUrl,
-    status: record.status,
+    status: resolveEffectiveStatus(record),
     lifecycleState,
     seoTier,
     robots: buildRobots(record, pageMode),
@@ -66,7 +71,7 @@ function renderDomainListingsJson(records, metadataBaseUrl = DEFAULT_PUBLIC_BASE
     .filter(Boolean);
 
   return {
-    scope: options.scope || "indexed",
+    scope: options.scope || "all",
     count: listings.length,
     limit: options.limit ?? null,
     truncated: options.truncated === true,

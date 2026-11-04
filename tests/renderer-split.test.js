@@ -76,7 +76,7 @@ test("SEO renderer builds canonical title without intent label", () => {
     slug: "anudesk-com",
     tld: ".com",
   };
-  assert.equal(buildSeoTitle(record, "canonical"), "anudesk.com — .com Auction Domain | Snatch.auction");
+  assert.equal(buildSeoTitle(record, "canonical"), "anudesk.com — .com Auction Domain | URL Snatcher");
   assert.doesNotMatch(buildSeoTitle(record, "canonical"), /Receptionist|Candidate/i);
   assert.match(
     buildSeoDescription(record, "canonical"),
@@ -98,7 +98,7 @@ test("overlay renderer includes intent label but does not change SEO title", () 
   const overlay = buildIntentOverlay(record, intentRecord, sessionCandidate, { rank: 1, fitScore: 76 });
   const seo = buildSeoRenderData(record, "overlay");
   assert.match(overlay.bannerHtml, /Recommended for AI Receptionist/);
-  assert.match(seo.title, /Auction Domain \| Snatch\.auction/);
+  assert.match(seo.title, /Auction Domain \| URL Snatcher/);
   assert.doesNotMatch(seo.title, /AI Receptionist Domain Candidate/i);
 });
 
@@ -186,7 +186,7 @@ test("canonical promoted page still index/follow and overlay page noindex with b
     });
     assert.match(html, /meta name="robots" content="noindex,follow/);
     assert.match(html, /link rel="canonical" href="https:\/\/urlsnatcher\.com\/domains\/anudesk-com"/);
-    assert.match(html, /<title>anudesk\.com — \.com Auction Domain \| Snatch\.auction<\/title>/);
+    assert.match(html, /<title>anudesk\.com — \.com Auction Domain \| URL Snatcher<\/title>/);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

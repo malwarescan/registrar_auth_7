@@ -1,7 +1,7 @@
 const { listPublishedIntents } = require("./published-catalog");
 const { listSitemapCandidates } = require("./candidate-store/durable-candidates");
 const { toAbsolutePublicUrl } = require("./public-url");
-const { listGuideSlugs, MODIFIED: GUIDES_MODIFIED } = require("./guides/guide-content");
+const { listGuideSlugs, getGuide, MODIFIED: GUIDES_MODIFIED } = require("./guides/guide-content");
 
 // Loaded lazily: the hub renderer pulls in the store modules.
 function listIndexableHubEntries() {
@@ -137,6 +137,11 @@ function buildSitemapIndex(options = {}) {
   return buildSitemapIndexXml(entries);
 }
 
+function guideLastmod(pathname) {
+  const guide = getGuide(pathname.slice("/guides/".length));
+  return (guide && guide.modified) || GUIDES_MODIFIED;
+}
+
 function buildCoreSitemapEntries(options = {}) {
   // Hub lastmod is when the auction data was fetched.
   const hubLastmod = new Map(listIndexableHubEntries().map((entry) => [entry.pathname, formatLastmod(entry.lastmod)]));
@@ -144,7 +149,7 @@ function buildCoreSitemapEntries(options = {}) {
     pathname: toAbsolutePublicUrl(pathname, options),
     lastmod: hubLastmod.has(pathname)
       ? hubLastmod.get(pathname)
-      : CORE_PAGE_LASTMOD[pathname] || (pathname.startsWith("/guides/") ? GUIDES_MODIFIED : null),
+      : CORE_PAGE_LASTMOD[pathname] || (pathname.startsWith("/guides/") ? guideLastmod(pathname) : null),
     changefreq: hubLastmod.has(pathname) ? "daily" : "monthly",
   }));
 }

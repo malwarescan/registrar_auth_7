@@ -91,8 +91,21 @@ function renderList(items, ordered = false) {
   return `<${tag}>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</${tag}>`;
 }
 
+// Per-section source links, shown under the facts they support.
+function renderSectionSources(section) {
+  const links = (section.sources || [])
+    .map((key) => SOURCES[key])
+    .filter(Boolean)
+    .map((source) => `<a href="${escapeHtml(source.url)}" rel="nofollow noopener">${escapeHtml(source.label)}</a>`);
+  if (!links.length) return "";
+  const checked = section.checked ? `, checked ${escapeHtml(section.checked)}` : "";
+  return `<p class="guide-meta">Source${links.length > 1 ? "s" : ""}${checked}: ${links.join("; ")}</p>`;
+}
+
 function renderSection(section) {
   const parts = [`<h2>${escapeHtml(section.heading)}</h2>`];
+  // Lead paragraphs answer the heading first, before any list or table.
+  (section.lead || []).forEach((text) => parts.push(`<p>${escapeHtml(text)}</p>`));
   const paragraphs = section.paragraphs || [];
   // Lead-in paragraphs precede ordered steps; otherwise notes follow the table.
   if (section.ordered) {
@@ -102,6 +115,7 @@ function renderSection(section) {
   if (section.list) parts.push(renderList(section.list));
   if (section.table) parts.push(renderTable(section.table));
   if (!section.ordered) paragraphs.forEach((text) => parts.push(`<p>${escapeHtml(text)}</p>`));
+  parts.push(renderSectionSources(section));
   return `<section class="guide-section">${parts.join("\n")}</section>`;
 }
 
@@ -149,7 +163,7 @@ function buildArticleSchema(baseUrl, guide) {
     isPartOf: { "@id": `${baseUrl}/guides#collection` },
     about: { "@type": "Thing", name: "Expired domain auction", sameAs: "https://en.wikipedia.org/wiki/Domain_drop_catching" },
     datePublished: PUBLISHED,
-    dateModified: MODIFIED,
+    dateModified: guide.modified || MODIFIED,
     author: { "@id": orgId(baseUrl) },
     publisher: { "@id": orgId(baseUrl) },
     inLanguage: "en",
@@ -247,7 +261,7 @@ function renderGuidePage(slug, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL, option
       <article>
         <h1>${escapeHtml(guide.question)}</h1>
         ${guide.answer.map((text, index) => `<p class="${index === 0 ? "guide-answer" : ""}">${escapeHtml(text)}</p>`).join("\n        ")}
-        <p class="guide-meta">Updated ${escapeHtml(MODIFIED)}.</p>
+        <p class="guide-meta">Updated ${escapeHtml(guide.modified || MODIFIED)}.</p>
         ${guide.sections.map(renderSection).join("\n        ")}
         ${auctionData?.stats ? renderSnapshotSection(auctionData, dataKind) : ""}
         <section class="guide-section">

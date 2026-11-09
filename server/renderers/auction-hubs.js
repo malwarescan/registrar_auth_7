@@ -189,6 +189,7 @@ function renderGuideLinks() {
       <ul>
         <li><a href="/guides/should-i-bid-on-a-domain-with-low-bid-count">Should I bid on a domain with a low bid count?</a></li>
         <li><a href="/guides/how-to-estimate-a-fair-bid-for-an-expired-domain">How to estimate a fair bid for an expired domain</a></li>
+        <li><a href="/guides/what-is-a-domain-backorder">How does a domain backorder work?</a> (for names that reach the drop instead of an auction)</li>
         <li><a href="/guides">All expired-domain guides</a> · <a href="/methodology/">How we score names</a> · <a href="/data/">Download the data</a></li>
       </ul>`;
 }

@@ -26,12 +26,16 @@ const SOURCES = {
     url: "https://www.godaddy.com/help/listing-types-for-godaddy-auctions-1525",
   },
   dropcatch: {
-    label: "DropCatch: How it works (backorders cost $59, charged only on success)",
+    label: "DropCatch: How it works (backorder price varies by TLD, includes the first-year registration, charged only on success)",
     url: "https://www.dropcatch.com/hiw/overview",
   },
   dropcatchAuctions: {
     label: "DropCatch: Public auctions (3-5 days, proxy bidding)",
     url: "https://www.dropcatch.com/hiw/auctions",
+  },
+  parkioPricing: {
+    label: "Park.io: Pricing ($99 per backordered domain, registration included, charged only on success)",
+    url: "https://park.io/pricing",
   },
   dynadotGuide: {
     label: "Dynadot: Domain backordering guide (updated 1 June 2026)",
@@ -90,34 +94,35 @@ const SOURCES = {
 const GUIDES = [
   {
     slug: "what-is-a-domain-backorder",
-    modified: "2026-11-09",
+    modified: "2026-11-11",
     question: "How does a domain backorder work?",
     title: "How Does a Domain Backorder Work? Costs, Auctions and Refunds (2026)",
     description:
-      "A domain backorder asks a drop-catching service to register a name the moment the registry deletes it. See the expiry timeline, what DropCatch and NameSilo's catch.club charge, what happens when several people backorder, and when you pay nothing.",
+      "A domain backorder asks a drop-catching service to register a name the moment the registry deletes it. See the expiry timeline, what DropCatch, Park.io and NameSilo's catch.club charge, what happens when several people backorder, and when you pay nothing.",
     answer: [
-      "A domain backorder is a request you place with a drop-catching service to register a domain name the moment the registry deletes it. For a .com name whose owner stops paying, deletion comes at the end of a fixed sequence that ICANN describes: after any renewal window the registrar allows, a deleted name spends 30 days in the redemption period, when only the previous owner can restore it, and then 5 days in pending delete. The registry then releases the name and drop-catching services race to register it in the first moments. If you are the only person who backordered the name with a service and that service catches it, you pay the service's price: DropCatch lists $59 per backorder, and NameSilo's catch.club charges a 20% commission plus the domain's registration cost (prices checked 9 November 2026). If several people backordered the same name with the same service, the name goes to an auction among them. At DropCatch, catch.club and Dynadot you pay nothing if the catch fails. A domain backorder is not a reservation: the owner can still renew, the registrar can sell the name in its own expired-domain auction before deletion, and a rival drop-catcher can catch it first.",
+      "A domain backorder is a request you place with a drop-catching service to register a domain name the moment the registry deletes it. For a .com name whose owner stops paying, deletion comes at the end of a fixed sequence that ICANN describes: after any renewal window the registrar allows, a deleted name spends 30 days in the redemption period, when only the previous owner can restore it, and then 5 days in pending delete. The registry then releases the name and drop-catching services race to register it in the first moments. If you are the only person who backordered the name with a service and that service catches it, you pay the service's price: DropCatch listed $59 when we checked on 9 November 2026 and says its price varies by TLD, Park.io charges $99 per backordered domain with the registration included (checked 10 November 2026), and NameSilo's catch.club charges a 20% commission plus the domain's registration cost. If several people backordered the same name with the same service, the name goes to an auction among them. At DropCatch, Park.io, catch.club and Dynadot you pay nothing if the catch fails. A domain backorder is not a reservation: the owner can still renew, the registrar can sell the name in its own expired-domain auction before deletion, and a rival drop-catcher can catch it first.",
       "Disclosure: URL Snatcher is run by NameSilo. NameSilo also runs the catch.club backorder service and NameSilo's expired-domain auctions, both mentioned on this page.",
     ],
     sections: [
       {
         heading: "How much does a domain backorder cost?",
         lead: [
-          "A domain backorder at DropCatch costs $59, and DropCatch charges the $59 only if it secures the domain; DropCatch does not require a subscription. NameSilo's backorder service, catch.club, charges the standard 20% backorder commission plus the domain's registration cost when it catches a name for a single backorder holder, according to NameSilo's own guide published 15 January 2026. Dynadot says placing a backorder is free and you pay only if Dynadot catches the domain; Dynadot's backorder guide does not list a fixed .com price.",
-          "Name.com allows only one backorder per domain name, and only for a domain that already has a set drop date (Name.com help page updated 30 July 2025). GoDaddy no longer sells backorders; the GoDaddy section below gives the dates.",
+          "At the services below you pay only when a service catches the name. DropCatch listed $59 when we checked on 9 November 2026 and says the price of a backorder depends on the TLD; the price includes the first-year registration, and DropCatch charges it only if it secures the domain, with no subscription. Park.io charges $99 per backordered domain, includes the registration and charges your card only if you get the domain (checked 10 November 2026). NameSilo's backorder service, catch.club, charges the standard 20% backorder commission plus the domain's registration cost when it catches a name for a single backorder holder, according to NameSilo's own guide published 15 January 2026. Dynadot says placing a backorder is free and you pay only if Dynadot catches the domain; Dynadot's backorder guide does not list a fixed .com price.",
+          "Name.com allows only one backorder per domain name, and only for a domain that already has a set drop date (Name.com help page updated 30 July 2025). GoDaddy no longer sells backorders; the GoDaddy section below gives the dates, and lists that still show a GoDaddy backorder price are out of date. SnapNames and NameJet are not listed here because we could not confirm their current backorder prices on their own sites.",
           "The backorder price is the floor, not the final price. When other people backordered the same domain, the domain backorder becomes an auction and you pay your winning bid.",
         ],
         table: {
-          headers: ["Service", "Backorder price (checked 9 November 2026)", "If the catch fails", "If several people backorder"],
+          headers: ["Service", "Backorder price (date checked)", "Registration included?", "If the catch fails", "If several people backorder"],
           rows: [
-            ["DropCatch", "$59, charged only on success", "No charge", "Public auction among DropCatch users"],
-            ["catch.club (NameSilo)", "20% commission plus registration cost", "No charge; prefunded balance returned", "Closed auction among catch.club backorder holders"],
-            ["Dynadot", "Shown per domain; free to place", "No charge", "Dynadot backorder auction"],
-            ["GoDaddy", "Stopped selling backorders (see the GoDaddy section)", "Not applicable", "Not applicable"],
+            ["DropCatch", "$59 (9 November 2026); varies by TLD; charged only on success", "Yes, first year", "No charge", "Public auction among DropCatch users"],
+            ["Park.io", "$99 per domain (10 November 2026); charged only on success", "Yes", "No charge", "Auction among backorder holders"],
+            ["catch.club (NameSilo)", "20% commission plus registration cost (15 January 2026 guide)", "Charged on top", "No charge; prefunded balance returned", "Closed auction among catch.club backorder holders"],
+            ["Dynadot", "Shown per domain; free to place", "Not stated", "No charge", "Dynadot backorder auction"],
+            ["GoDaddy", "Stopped selling backorders (see the GoDaddy section)", "Not applicable", "Not applicable", "Not applicable"],
           ],
         },
-        sources: ["dropcatch", "catchclubResolved", "dynadotGuide", "namecomBackorder"],
-        checked: "9 November 2026",
+        sources: ["dropcatch", "parkioPricing", "catchclubResolved", "dynadotGuide", "namecomBackorder", "godaddyBackorderEnd"],
+        checked: "10 November 2026",
       },
       {
         heading: "Can I still backorder a domain at GoDaddy?",
@@ -188,7 +193,7 @@ const GUIDES = [
         heading: "Does NameSilo offer domain backorders?",
         lead: [
           "Yes. NameSilo's dedicated backorder platform is catch.club, and the catch.club site says it is powered by NameSilo. catch.club says it works with over 10 major drop-catch platforms, covers .com, .org, .net, .tv and more, and manages a caught domain for the first 60 days before delivering it to your account. NameSilo also sells expiring names before they drop through NameSilo expired-domain auctions. NameSilo expired-domain auctions run from 5 days after expiration until day 41 of expiration; the original owner can still renew up to, but not including, day 31, which cancels the auction; and the winner pays the bid plus a 1-year renewal.",
-          "Where another service may suit you better: DropCatch publishes one flat $59 price per caught domain, so if you want to know your exact cost before placing a single uncontested backorder, DropCatch states it up front, while catch.club's fee is a commission on top of the registration cost.",
+          "Where another service may suit you better: DropCatch and Park.io show a fixed price per caught domain with the registration included, so if you want to know your exact cost before placing a single uncontested backorder, they state it up front, while catch.club's fee is a commission on top of the registration cost.",
         ],
         sources: ["catchclubResolved", "catchclubHiw", "namesiloFaq", "dropcatch"],
         checked: "9 November 2026",
@@ -217,6 +222,10 @@ const GUIDES = [
       "Look up the domain's registrar and status in ICANN Lookup. If the name is listed in that registrar's expired-domain auction, bid there; if it is in redemption or pending delete, place a backorder with a service that charges only on success and write down your maximum bid before any follow-up auction starts.",
     faqs: [
       {
+        q: "How much does it cost to backorder a domain?",
+        a: "At DropCatch, Park.io and catch.club you pay only if the service catches the name. DropCatch listed $59 on 9 November 2026 and says its price varies by TLD; Park.io charges $99 with the registration included (10 November 2026); NameSilo's catch.club charges a 20% commission plus the registration cost. If several people backorder the same name, it goes to an auction and you pay your winning bid.",
+      },
+      {
         q: "Is a domain backorder a guarantee that I get the domain?",
         a: "No. A domain backorder only gives a service permission to try to register the name when it drops. The owner can renew, the registrar can sell the name first, or another drop-catcher can win the race.",
       },
@@ -229,7 +238,7 @@ const GUIDES = [
         a: "No. A domain caught after it drops is a new registration with a new creation date. A domain bought in a registrar expired-domain auction before deletion keeps its creation date.",
       },
     ],
-    sources: ["icannExpiryFaq", "icannRenewal", "dropcatch", "dropcatchAuctions", "catchclubResolved", "catchclubHiw", "dynadotGuide", "godaddyBackorderEnd", "namecomBackorder", "namesiloFaq", "godaddyTimeline", "icannLookup"],
+    sources: ["icannExpiryFaq", "icannRenewal", "dropcatch", "dropcatchAuctions", "parkioPricing", "catchclubResolved", "catchclubHiw", "dynadotGuide", "godaddyBackorderEnd", "namecomBackorder", "namesiloFaq", "godaddyTimeline", "icannLookup"],
     related: ["how-do-expired-domain-auctions-work", "how-to-check-an-expired-domain-before-bidding", "what-is-a-reserve-price-in-a-domain-auction"],
   },
   {

@@ -195,6 +195,8 @@ function resolveStaticPath(pathname) {
   return filePath;
 }
 
+const INDEXNOW_KEY = "21492ba8064e6380ef967f3bb3af78f7";
+
 // Only these paths are served straight from disk. Everything else either has a
 // route above or is a 404, so leftover files in the repo never become pages.
 function isPublicStaticPath(pathname) {
@@ -526,6 +528,13 @@ const server = http.createServer(async (req, res) => {
   if ((req.method === "GET" || req.method === "HEAD") && pathname === "/assets/site-logo.svg") {
     res.writeHead(200, { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" });
     res.end(req.method === "HEAD" ? undefined : renderSiteLogoSvg());
+    return;
+  }
+
+  // IndexNow ownership key (https://www.indexnow.org/documentation): must be served from the site root.
+  if ((req.method === "GET" || req.method === "HEAD") && pathname === `/${INDEXNOW_KEY}.txt`) {
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=86400" });
+    res.end(req.method === "HEAD" ? undefined : INDEXNOW_KEY);
     return;
   }
 

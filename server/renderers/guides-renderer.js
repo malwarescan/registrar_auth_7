@@ -1,7 +1,7 @@
 const { DEFAULT_PUBLIC_BASE_URL } = require("../public-url");
 const { getAuctionDataMeta } = require("../candidate-store/auction-snapshot");
 const { describeAuctionData } = require("./auction-data-label");
-const { GUIDES, SOURCES, PUBLISHED, MODIFIED, getGuide } = require("../guides/guide-content");
+const { GUIDES, HUBS, SOURCES, PUBLISHED, MODIFIED, getGuide } = require("../guides/guide-content");
 const { SITE_NAME, orgId, websiteId } = require("../site-identity");
 const { renderPageDocument } = require("./site-layout");
 const GUIDES_INDEX_TITLE = "Expired Domain Auction Guides: Backorders, Bidding and Due Diligence";
@@ -103,7 +103,9 @@ function renderSectionSources(section) {
 }
 
 function renderSection(section) {
-  const parts = [`<h2>${escapeHtml(section.heading)}</h2>`];
+  // Hub sections carry a stable id so other pages can link to the section.
+  const id = section.id ? ` id="${escapeHtml(section.id)}"` : "";
+  const parts = [`<h2${id}>${escapeHtml(section.heading)}</h2>`];
   // Lead paragraphs answer the heading first, before any list or table.
   (section.lead || []).forEach((text) => parts.push(`<p>${escapeHtml(text)}</p>`));
   const paragraphs = section.paragraphs || [];
@@ -227,9 +229,94 @@ ${body}
   });
 }
 
+function sourceLinks(keys) {
+  return keys
+    .map((key) => SOURCES[key])
+    .filter(Boolean)
+    .map((source) => `<a href="${escapeHtml(source.url)}" rel="nofollow noopener">${escapeHtml(source.label)}</a>`)
+    .join("; ");
+}
+
+// Ids of the fixed hub sections. Never change an id once it is live.
+const HUB_FIXED_SECTIONS = [
+  { id: "faq", heading: "Frequently asked questions" },
+  { id: "related-guides", heading: "Related guides" },
+  { id: "sources", heading: "Sources" },
+];
+
+function renderHubPage(hub, baseUrl) {
+  const canonical = guideUrl(baseUrl, hub.slug);
+  const schemas = [
+    { ...buildArticleSchema(baseUrl, hub), datePublished: hub.published, dateModified: hub.modified },
+    buildFaqSchema(hub.faqs),
+    buildBreadcrumbSchema(baseUrl, [
+      { name: "Home", url: `${baseUrl}/` },
+      { name: "Guides", url: `${baseUrl}/guides` },
+      { name: hub.question, url: canonical },
+    ]),
+  ];
+
+  const toc = [...hub.sections, ...HUB_FIXED_SECTIONS]
+    .map((section) => `<li><a href="#${escapeHtml(section.id)}">${escapeHtml(section.heading)}</a></li>`)
+    .join("");
+  const keyFacts = hub.keyFacts
+    .map((fact) => `<li>${escapeHtml(fact.text)} <span class="guide-meta">(${sourceLinks(fact.sources)})</span></li>`)
+    .join("");
+  const related = hub.related
+    .map(getGuide)
+    .filter(Boolean)
+    .map((item) => `<li><a href="/guides/${escapeHtml(item.slug)}">${escapeHtml(item.question)}</a></li>`)
+    .join("");
+  const sources = hub.sources
+    .map((key) => SOURCES[key])
+    .filter(Boolean)
+    .map((source) => `<li><a href="${escapeHtml(source.url)}" rel="nofollow noopener">${escapeHtml(source.label)}</a></li>`)
+    .join("");
+
+  const body = `      <p class="guide-crumbs"><a href="/">Home</a> › <a href="/guides">Guides</a></p>
+      <article>
+        <h1>${escapeHtml(hub.question)}</h1>
+        ${hub.answer.map((text, index) => `<p class="${index === 0 ? "guide-answer" : ""}">${escapeHtml(text)}</p>`).join("\n        ")}
+        <p class="guide-meta">By ${escapeHtml(hub.byline)} · Last updated <time datetime="${escapeHtml(hub.modified)}">${escapeHtml(hub.modified)}</time></p>
+        <aside class="guide-next" aria-label="Key facts">
+          <strong>Key facts</strong>
+          <ul>${keyFacts}</ul>
+        </aside>
+        <nav class="guide-section" aria-label="Contents">
+          <strong>Contents</strong>
+          <ol>${toc}</ol>
+        </nav>
+        ${hub.sections.map(renderSection).join("\n        ")}
+        <section class="guide-section guide-faq">
+          <h2 id="faq">Frequently asked questions</h2>
+          ${hub.faqs.map((faq) => `<h3>${escapeHtml(faq.q)}</h3>\n          <p>${escapeHtml(faq.a)}</p>`).join("\n          ")}
+        </section>
+        <section class="guide-section">
+          <h2 id="related-guides">Related guides</h2>
+          <ul>${related}</ul>
+        </section>
+        <section class="guide-section guide-sources">
+          <h2 id="sources">Sources</h2>
+          <ul>${sources}</ul>
+        </section>
+      </article>`;
+
+  return renderDocument({
+    title: `${hub.title} | ${SITE_NAME}`,
+    description: hub.description,
+    canonical,
+    schemas,
+    body,
+    currentSlug: hub.slug,
+    ogType: "article",
+    baseUrl,
+  });
+}
+
 function renderGuidePage(slug, metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL, options = {}) {
   const guide = getGuide(slug);
   if (!guide) return null;
+  if (guide.hub) return renderHubPage(guide, metadataBaseUrl);
   const baseUrl = metadataBaseUrl;
   const canonical = guideUrl(baseUrl, guide.slug);
   const auctionData = guide.dataSection ? (options.auctionData !== undefined ? options.auctionData : getAuctionDataMeta()) : null;
@@ -320,7 +407,7 @@ function renderGuidesIndexPage(metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
       publisher: { "@id": orgId(baseUrl) },
       mainEntity: {
         "@type": "ItemList",
-        itemListElement: GUIDES.map((guide, index) => ({
+        itemListElement: [...HUBS, ...GUIDES].map((guide, index) => ({
           "@type": "ListItem",
           position: index + 1,
           url: guideUrl(baseUrl, guide.slug),
@@ -334,7 +421,7 @@ function renderGuidesIndexPage(metadataBaseUrl = DEFAULT_PUBLIC_BASE_URL) {
     ]),
   ];
 
-  const items = GUIDES.map(
+  const items = [...HUBS, ...GUIDES].map(
     (guide) => `<li><a href="/guides/${escapeHtml(guide.slug)}"><strong>${escapeHtml(guide.question)}</strong></a><br />${escapeHtml(guide.answer[0])}</li>`
   ).join("\n          ");
 

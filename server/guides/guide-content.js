@@ -85,6 +85,14 @@ const SOURCES = {
     label: "USPTO Trademark Search",
     url: "https://tmsearch.uspto.gov/",
   },
+  icannEpp: {
+    label: "ICANN: EPP status codes, what they mean and why you should know",
+    url: "https://www.icann.org/resources/pages/epp-status-codes-2014-06-16-en",
+  },
+  rfc3915: {
+    label: "IETF RFC 3915: Domain Registry Grace Period Mapping for EPP",
+    url: "https://www.rfc-editor.org/rfc/rfc3915",
+  },
 };
 
 const GUIDES = [
@@ -710,16 +718,241 @@ const GUIDES = [
   },
 ];
 
+
+// Hub pages: one complete answer per topic that links every guide on it.
+// Kept out of GUIDES so the guide footer navigation (and so every guide page)
+// is unchanged until the hub is linked from its guides.
+const HUBS = [
+  {
+    hub: true,
+    slug: "expired-domains-backorder-guide",
+    published: "2026-11-12",
+    modified: "2026-11-12",
+    byline: "URL Snatcher",
+    question: "Expired domains and backorders: the complete guide",
+    title: "Expired Domains and Backorders: The Complete Guide",
+    description:
+      "An expired .com is not released at once: a registrar-set renewal window, then 30 days of redemption and 5 of pending delete. A backorder catches it at the drop.",
+    answer: [
+      "An expired domain is not released straight away. The registrar first gives the owner a renewal window of its own length. If the registrar then deletes a .com, it spends 30 days in redemption, when only the previous owner can restore it, and 5 days in pending delete before it drops. A backorder tries to register it then.",
+      "Disclosure: URL Snatcher is run by NameSilo. NameSilo also runs the catch.club backorder service and NameSilo's expired-domain auctions, both described on this page.",
+    ],
+    keyFacts: [
+      { text: "A deleted .com spends 30 days in the Redemption Grace Period, during which only the previous owner can restore it through the registrar that deleted it.", sources: ["icannErrp"] },
+      { text: "After redemption, the name stays in pendingDelete for 5 days and is then released for registration on a first-come, first-served basis.", sources: ["icannExpiryFaq", "icannEpp"] },
+      { text: "During redemption the domain does not resolve and cannot be transferred to another registrar.", sources: ["icannErrp"] },
+      { text: "The renewal window before deletion is set by each registrar; NameSilo allows most domains up to 31 days.", sources: ["icannErrp", "namesiloFaq"] },
+      { text: "A domain won in a NameSilo expired-domain auction keeps its original creation date; a domain caught after the drop is a new registration.", sources: ["namesiloFaq", "rfc3915"] },
+      { text: "At catch.club, NameSilo's backorder service, you pay only if catch.club catches the domain.", sources: ["catchclubResolved"] },
+    ],
+    sections: [
+      {
+        id: "domain-lifecycle",
+        heading: "What happens when a .com domain expires?",
+        lead: [
+          "A .com that is not renewed moves through four stages before anyone else can register it: the registrar's renewal window, an optional registrar auction, a 30-day redemption period and a 5-day pending delete. Only the last two have fixed lengths set by ICANN policy; the renewal window is set by each registrar.",
+        ],
+        table: {
+          headers: ["Stage", "When it starts", "How long it lasts", "Who can act"],
+          rows: [
+            ["Renewal reminders", "Before the expiry date", "Registrars must send one notice about one month before (26-35 days) and one about one week before (4-10 days)", "The owner"],
+            ["Renewal window after expiry", "The expiry date", "Set by the registrar. NameSilo: up to 31 days for most domains. ICANN sets minimum rules, not one length (see the next section)", "The owner can renew"],
+            ["Registrar expired-domain auction (optional)", "During the renewal window", "NameSilo: from 5 days after expiry until day 41; other registrars set their own windows", "Bidders; the owner can still renew at NameSilo up to, but not including, day 31"],
+            ["Redemption Grace Period (redemptionPeriod)", "When the registrar deletes the name", "30 days", "Only the previous owner, through the registrar that deleted it"],
+            ["Pending delete (pendingDelete)", "When redemption ends", "5 days", "Nobody"],
+            ["Drop", "When pending delete ends", "The name is released for registration", "Anyone: first come, first served, which is where backorders act"],
+          ],
+        },
+        sources: ["icannErrp", "namesiloFaq", "icannExpiryFaq", "icannEpp"],
+        checked: "12 November 2026",
+      },
+      {
+        id: "renewal-window",
+        heading: "How long can the owner renew a domain after it expires?",
+        lead: [
+          "It depends on the registrar: ICANN's Expired Registration Recovery Policy (ERRP) does not set one renewal window, but it sets minimum rules every registrar of a generic domain such as .com must follow. NameSilo says it allows most domains up to 31 days after expiry to renew.",
+        ],
+        list: [
+          "The owner must be able to renew from the expiry date through the period when the registrar interrupts the domain's DNS.",
+          "If the registrar deletes the name within eight days of expiry, it must interrupt DNS from expiry until deletion.",
+          "If the registrar deletes the name eight or more days after expiry, DNS must be interrupted for at least the last eight consecutive days the owner can still renew.",
+          "If the registrar shows a web page on the expired domain while it can still be renewed, the page must say the domain has expired and give renewal instructions.",
+          "Within five days after expiry, the registrar must send at least one more notice with renewal instructions.",
+        ],
+        paragraphs: [
+          "Because the renewal window differs between registrars, look up the domain's current registrar with ICANN Lookup and read that registrar's own expiry policy before you plan around a date.",
+        ],
+        sources: ["icannErrp", "namesiloFaq", "icannLookup"],
+        checked: "12 November 2026",
+      },
+      {
+        id: "redemption-period",
+        heading: "How long is the redemption period?",
+        lead: [
+          "The redemption period, which ICANN calls the Redemption Grace Period, lasts 30 days from the moment the registrar deletes the domain. In those 30 days only the previous owner can get the name back, by asking the registrar that deleted it to restore it, usually for a redemption fee.",
+        ],
+        list: [
+          "The registry must disable the domain's DNS, so its website and email stop working.",
+          "The registry must block transfers to another registrar, and its registration data must show the name is in its Redemption Grace Period.",
+          "Registrars must publish their redemption or restore fee where customers can find it at the time of registration.",
+          "Once the registrar asks the registry to restore the name, the domain shows pendingRestore while the registrar files the paperwork, in a window ICANN describes as frequently seven days; if the paperwork is not filed, the domain goes back to redemptionPeriod.",
+        ],
+        sources: ["icannErrp", "icannEpp", "rfc3915"],
+        checked: "12 November 2026",
+      },
+      {
+        id: "pending-delete",
+        heading: "What is pending delete, and when does the domain drop?",
+        lead: [
+          "Pending delete is the last stage before a domain drops: after the 30-day redemption period ends without a restore, the domain stays in pendingDelete for 5 days and nobody can restore or register it. When those 5 days end, the registry purges the name and it becomes available for registration on a first-come, first-served basis.",
+          "That release is the drop. Drop-catching services send registration requests the moment the name is available, which is why a backorder, not a manual registration, is the usual way to get a name that other people want.",
+        ],
+        sources: ["icannExpiryFaq", "icannEpp", "rfc3915", "catchclubResolved"],
+        checked: "12 November 2026",
+      },
+      {
+        id: "what-you-can-do",
+        heading: "What can you do at each stage?",
+        lead: [
+          "As a buyer you can bid while the registrar auctions the name, backorder it once it is in redemption or pending delete, and register it yourself only if it drops and nobody catches it. The owner's options shrink at each stage.",
+        ],
+        table: {
+          headers: ["Stage", "What the owner can do", "What a buyer can do"],
+          rows: [
+            ["Renewal window", "Renew at the normal or post-expiry renewal price", "Bid in the registrar's expired-domain auction if it runs one; place a backorder in case the name is not sold"],
+            ["Redemption (30 days)", "Restore through the registrar that deleted it, usually for a redemption fee; no transfer out", "Place or keep a backorder; nothing can be bought yet"],
+            ["Pending delete (5 days)", "Nothing; the name can no longer be restored", "Place or keep a backorder before the drop"],
+            ["After the drop", "Register it again like anyone else", "A backorder service tries to catch it; if nobody does, register it by hand"],
+          ],
+        },
+        sources: ["icannErrp", "icannExpiryFaq", "namesiloFaq"],
+        checked: "12 November 2026",
+      },
+      {
+        id: "status-codes",
+        heading: "Which status codes show where an expired domain is?",
+        lead: [
+          "The domain's status codes in ICANN Lookup show which stage it has reached. ICANN publishes what each code means; the ones you will see on an expiring domain are below.",
+        ],
+        table: {
+          headers: ["Status code", "What ICANN says it means", "What it tells a buyer"],
+          rows: [
+            ["autoRenewPeriod", "A grace period after the registration expired and the registry renewed it automatically; if the registrar deletes the name now, the registry credits the renewal", "The name has expired but is still in the renewal window"],
+            ["clientHold", "The registrar has told the registry not to put the domain in the DNS; usually set in legal disputes, for non-payment, or when the domain is to be deleted", "Often seen on expired names; on its own it is not a deletion"],
+            ["redemptionPeriod", "The registrar has asked the registry to delete the domain; it is held for 30 days, then purged five calendar days after redemption ends", "The drop is at most about 35 days away (30 days of redemption plus 5 of pending delete) unless the owner restores it"],
+            ["pendingRestore", "The registrar has asked the registry to restore a domain in redemption and must file restore documentation", "The owner is trying to get the name back"],
+            ["pendingDelete", "Shown alone, the domain spent 30 days in redemption without a restore and will be purged within days", "The drop is close; only a backorder or a hand registration after the drop can get it"],
+          ],
+        },
+        sources: ["icannEpp", "icannLookup"],
+        checked: "12 November 2026",
+      },
+      {
+        id: "how-backorders-work",
+        heading: "How does a domain backorder work?",
+        lead: [
+          "A backorder asks a drop-catching service to register a domain the moment the registry deletes it. It only acts at the drop: it does not stop the owner renewing or restoring the name, or the registrar selling it in an expired-domain auction first, and a rival service can catch the name before yours does.",
+          "Prices, refunds and what happens when several people backorder the same name differ by service; the guide to how a domain backorder works compares them.",
+        ],
+        sources: ["catchclubResolved", "icannExpiryFaq"],
+        checked: "12 November 2026",
+      },
+      {
+        id: "backorder-with-namesilo",
+        heading: "How do you backorder a domain with NameSilo's catch.club?",
+        lead: [
+          "NameSilo's backorder service is catch.club, which says it is powered by NameSilo. You prefund your account, place a backorder, and pay only if catch.club catches the domain; if several catch.club users backordered it, they bid for it in a closed auction.",
+        ],
+        paragraphs: ["The steps, as NameSilo and catch.club describe them:"],
+        ordered: [
+          "Find the domain on catch.club. catch.club says it supports .com, .org, .net, .tv and more.",
+          "Prefund your account with enough to cover the backorder fee and the registration cost.",
+          "Place the backorder. The prefunded amount stays in your account and returns to your available balance if the catch fails.",
+          "At the drop, catch.club tries to register the name; catch.club says it works with over 10 major drop-catch platforms. If a competitor's service catches it first or the owner renews, you are not charged, and you have no recourse through catch.club.",
+          "If you were the only catch.club user with a backorder, you get the domain and pay the 20% backorder commission plus the registration cost.",
+          "If several catch.club users backordered it, they enter a private auction that NameSilo says typically runs three to seven days and starts at the basic backorder fee plus registration cost. The winner pays the winning bid plus the registration fee and the 20% commission; losing bidders pay nothing.",
+          "catch.club manages a caught domain for the first 60 days, then delivers it to your account; catch.club says all restrictions are removed 66 days after delivery.",
+        ],
+        sources: ["catchclubResolved", "catchclubHiw"],
+        checked: "12 November 2026",
+      },
+      {
+        id: "backorder-vs-auction",
+        heading: "Should you use a backorder, an expired-domain auction or register by hand?",
+        lead: [
+          "Bid in the registrar's expired-domain auction if the name is listed there, place a backorder if the name reaches redemption or pending delete, and register by hand only after a drop nobody caught. Each route works at a different stage, so for a name you want you may use more than one.",
+        ],
+        table: {
+          headers: ["Route", "Stage it works at", "What you pay", "Creation date", "Main risk"],
+          rows: [
+            ["Registrar expired-domain auction", "Renewal window, before deletion", "At NameSilo: your bid plus a 1-year renewal", "Kept (NameSilo states the creation date is unchanged)", "At NameSilo the owner can renew up to, but not including, day 31, which cancels the auction"],
+            ["Backorder (drop-catch)", "At the drop, after redemption and pending delete", "The service's fee if you are the only backorder; your winning bid if others backordered too", "New registration", "The owner restores the name, it is sold in a registrar auction, or a rival service catches it"],
+            ["Hand registration", "After a drop nobody caught", "The standard registration fee", "New registration", "Only realistic for names no service is trying to catch"],
+          ],
+        },
+        sources: ["namesiloFaq", "catchclubResolved", "icannExpiryFaq"],
+        checked: "12 November 2026",
+      },
+    ],
+    faqs: [
+      {
+        q: "How long after a .com expires does it drop?",
+        a: "It depends on how long the registrar keeps the expired name before deleting it, which varies by registrar. After deletion, a .com spends 30 days in redemption and 5 days in pending delete, so it drops about 35 days after the registrar deletes it.",
+      },
+      {
+        q: "Can the owner still renew a domain after it expires?",
+        a: "Yes, for a period set by the registrar. ICANN's ERRP requires that the owner can renew from expiry through the period when the domain's DNS is interrupted. NameSilo allows most domains up to 31 days.",
+      },
+      {
+        q: "Can I transfer a domain that is in the redemption period?",
+        a: "No. During the Redemption Grace Period the registry must block transfers. The previous owner has to restore the domain through the registrar that deleted it first.",
+      },
+      {
+        q: "Does a domain in redemption still work?",
+        a: "No. During the Redemption Grace Period the registry must disable the domain's DNS, so its website and email stop working until the domain is restored.",
+      },
+      {
+        q: "What does pendingDelete mean?",
+        a: "Shown on its own, pendingDelete means the domain spent 30 days in redemption without being restored. It stays there for 5 days, is then purged, and becomes available for registration first come, first served.",
+      },
+      {
+        q: "Do I pay for a failed backorder at catch.club?",
+        a: "No. NameSilo states you only pay if catch.club catches the domain. Your prefunded balance stays in your account if the catch fails.",
+      },
+      {
+        q: "Does a domain bought in an expired-domain auction keep its age?",
+        a: "At NameSilo, yes: a domain won in an expired-domain auction moves to your account with its creation date unchanged. A domain caught by a backorder after the drop is a new registration.",
+      },
+      {
+        q: "Is a backorder a guarantee that I get the domain?",
+        a: "No. The owner can renew or restore the name, the registrar can sell it in an expired-domain auction first, and another drop-catching service can catch it before yours.",
+      },
+    ],
+    sources: ["icannErrp", "icannExpiryFaq", "icannEpp", "rfc3915", "namesiloFaq", "catchclubResolved", "catchclubHiw", "icannLookup"],
+    related: [
+      "what-is-a-domain-backorder",
+      "how-do-expired-domain-auctions-work",
+      "how-to-check-an-expired-domain-before-bidding",
+      "do-expired-domains-keep-their-backlinks",
+      "should-i-bid-on-a-domain-with-low-bid-count",
+      "what-is-a-reserve-price-in-a-domain-auction",
+      "expired-domain-vs-new-domain",
+      "how-to-estimate-a-fair-bid-for-an-expired-domain",
+    ],
+  },
+];
+
 function getGuide(slug) {
-  return GUIDES.find((guide) => guide.slug === slug) || null;
+  return GUIDES.find((guide) => guide.slug === slug) || HUBS.find((hub) => hub.slug === slug) || null;
 }
 
 function listGuideSlugs() {
-  return GUIDES.map((guide) => guide.slug);
+  return [...GUIDES, ...HUBS].map((guide) => guide.slug);
 }
 
 module.exports = {
   GUIDES,
+  HUBS,
   SOURCES,
   PUBLISHED,
   MODIFIED,

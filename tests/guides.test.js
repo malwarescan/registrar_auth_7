@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { GUIDES, listGuideSlugs } = require("../server/guides/guide-content");
+const { GUIDES, HUBS, listGuideSlugs } = require("../server/guides/guide-content");
 const { buildAuctionStore } = require("../server/candidate-store/auction-snapshot");
 const {
   renderGuidePage,
@@ -25,7 +25,7 @@ function jsonLdBlocks(html) {
 
 test("eight guides with unique slugs and complete decision sections", () => {
   assert.equal(GUIDES.length, 8);
-  assert.equal(new Set(listGuideSlugs()).size, 8);
+  assert.equal(new Set(listGuideSlugs()).size, GUIDES.length + HUBS.length); // slugs unique across guides and hubs
   for (const guide of GUIDES) {
     assert.ok(guide.question.endsWith("?"), guide.slug);
     assert.ok(guide.answer.length >= 1 && guide.answer.length <= 3, guide.slug);
@@ -145,4 +145,51 @@ test("homepage has a descriptive title, meta description and guide links", () =>
   assert.match(html, /href="\/experiments\/intent-fetch\/"/);
   const intentFetch = fs.readFileSync(path.join(ROOT, "experiments", "intent-fetch", "index.html"), "utf8");
   assert.match(intentFetch, /href="\/guides"/);
+});
+
+test("hub page: answer-first structure, stable anchors, sourced facts and schema", () => {
+  assert.equal(HUBS.length, 1);
+  for (const hub of HUBS) {
+    const html = renderGuidePage(hub.slug, BASE);
+    assert.equal((html.match(/<h1>/g) || []).length, 1, hub.slug);
+    assert.match(html, new RegExp(`<link rel="canonical" href="${BASE}/guides/${hub.slug}" />`));
+    assert.ok(hub.title.length < 60, "title under 60 characters before the brand");
+    assert.ok(hub.description.length >= 140 && hub.description.length <= 160, "meta description length");
+    const words = hub.answer[0].split(/\s+/).length;
+    assert.ok(words >= 40 && words <= 60, `direct answer is ${words} words`);
+    assert.ok(hub.keyFacts.length >= 3 && hub.keyFacts.length <= 6);
+    assert.ok(hub.faqs.length >= 6 && hub.faqs.length <= 10);
+    // Every fact block names at least one known source.
+    const { SOURCES } = require("../server/guides/guide-content");
+    for (const block of [...hub.keyFacts, ...hub.sections]) {
+      assert.ok(block.sources.length >= 1 && block.sources.every((key) => SOURCES[key]), block.id || block.text);
+    }
+    // Every H2 has a stable id, and every contents link points at one.
+    const h2s = [...html.matchAll(/<h2([^>]*)>/g)].map((match) => match[1]);
+    assert.ok(h2s.every((attrs) => /id="[a-z0-9-]+"/.test(attrs)));
+    const ids = new Set([...html.matchAll(/<h2 id="([^"]+)"/g)].map((match) => match[1]));
+    for (const [, anchor] of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.has(anchor), anchor);
+    assert.ok(html.includes("<table>") && html.includes("<ol>"));
+    assert.match(html, /Last updated <time datetime="\d{4}-\d{2}-\d{2}">/);
+    assert.match(html, /URL Snatcher is run by NameSilo/);
+    for (const slug of hub.related) assert.ok(html.includes(`href="/guides/${slug}"`), slug);
+
+    const nodes = jsonLdBlocks(html);
+    const article = nodes.find((block) => block["@type"] === "Article");
+    assert.equal(article.datePublished, hub.published);
+    assert.equal(article.dateModified, hub.modified);
+    assert.ok(article.author);
+    const faq = nodes.find((block) => block["@type"] === "FAQPage");
+    assert.deepEqual(faq.mainEntity.map((item) => item.name), hub.faqs.map((item) => item.q));
+    assert.ok(nodes.some((block) => block["@type"] === "BreadcrumbList"));
+  }
+});
+
+test("hubs are on the guides index but not in the guide footer navigation", () => {
+  const index = renderGuidesIndexPage(BASE);
+  const guidePage = renderGuidePage("what-is-a-domain-backorder", BASE);
+  for (const hub of HUBS) {
+    assert.ok(index.includes(`href="/guides/${hub.slug}"`), hub.slug);
+    assert.ok(!guidePage.includes(`/guides/${hub.slug}`), `${hub.slug} not linked from guide pages yet`);
+  }
 });

@@ -9,6 +9,7 @@ Live site: https://urlsnatcher.com
 - `/` — what the site does, links to the finder, guides and data
 - `/experiments/intent-fetch/` — domain finder: describe what you are building, get matching auctioned names with scores, recorded bid, end time and the NameSilo auction link
 - `/guides` — expired domain auction guides (one question per page):
+  - `/guides/expired-domains-backorder-guide` — complete guide: the expired-domain lifecycle (renewal window, 30-day redemption, 5-day pending delete, drop) and backorders
   - `/guides/what-is-a-domain-backorder`
   - `/guides/how-do-expired-domain-auctions-work`
   - `/guides/how-to-check-an-expired-domain-before-bidding`

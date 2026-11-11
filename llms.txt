@@ -1,6 +1,6 @@
 # {{SITE_NAME}} (urlsnatcher.com)
 
-Live site: **https://urlsnatcher.com**
+Live site: https://urlsnatcher.com
 
 {{SITE_NAME}} is run by NameSilo. It lists NameSilo expired-domain auctions, scores each name with published rules, and publishes decision guides for buying expired domains. Bids are placed on NameSilo, not on this site.
 
